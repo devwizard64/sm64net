@@ -29,6 +29,7 @@ We strongly recommend using the latest nightly build of Project64, as that works
 
 ### Usage (Server)
 *Python 2 is also supported.*
+
 `python3 main.py [plugin]`
 * `plugin` - Server plugin, defaults to `default`
 
