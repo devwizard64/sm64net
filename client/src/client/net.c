@@ -194,8 +194,8 @@ bool net_update(void)
     /* tcp write */
     if (np.np_tcp_id != 0)
     {
-        np.np_tcp_id = 0;
         assert(sendall(net_tcp_socket, &np.tcp, sizeof(np.tcp)));
+        np.np_tcp_id = 0;
         assert(mem_write(
             sm64_g_net_players + sizeof(np.udp), &np.np_tcp_id,
             sizeof(np.np_tcp_id)
