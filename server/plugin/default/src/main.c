@@ -382,7 +382,7 @@ static void net_player_update_self(
     np->np_gfx_flags |= eyes        << 11 & 0x3800;
     np->np_gfx_flags |= gfx->gloves <<  8 & 0x0700;
     np->np_gfx_flags |= gfx->wings  <<  7 & 0x0080;
-    np->np_gfx_flags |= gfx->cap    <<  5 & 0x0060;
+    np->np_gfx_flags |= gfx->cap    >>  3 & 0x0060;
     np->np_gfx_flags |= gfx->hold   <<  3 & 0x0018;
     np->np_gfx_alpha = gfx->cap & 0xFF;
     np->np_gfx_punch = gfx->punch;
