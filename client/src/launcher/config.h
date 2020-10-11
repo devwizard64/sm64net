@@ -9,19 +9,21 @@
 #define _CONFIG_H_
 
 #include "types.h"
+#include "sm64net.h"
 
 struct config_t
 {
-    /* 0x0000 */    char proc[493];
-    /* 0x01ED */    char addr[493];
-    /* 0x03D8 */    u16  port;
-    /* 0x03DC */    u32  colour;
-    /* 0x03E0 */    u8   name[32];
-};  /* 0x0400 */
+    /* 0x0000 */    char proc[0x400+1];
+    /* 0x0401 */    char addr[0x400+1];
+    /* 0x0802 */    u16  port;
+    /* 0x0804 */    u32  colour;
+    /* 0x0808 */    u8   name[NET_PLAYER_NAME_LEN];
+};  /* 0x0828 */
 
 extern struct config_t g_config;
 
-extern int config_read(void);
-extern int config_write(void);
+extern bool config_read(void);
+extern bool config_write(void);
+extern bool config_write_nff(void);
 
 #endif /* _CONFIG_H_ */

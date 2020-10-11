@@ -15,7 +15,6 @@
 
 #include "window.h"
 #include "config.h"
-#include "menu.h"
 
 #define wnd(w, class, name, style)                                             \
 {                                                                              \
@@ -56,9 +55,9 @@ static void window_error(HWND hwnd, const char *msg)
     MessageBox(hwnd, msg, "Error", MB_ICONERROR | MB_OK);
 }
 
-static void window_config_write(HWND hwnd)
+static void window_config_write(HWND hwnd, bool nff)
 {
-    if (config_write())
+    if (config_write() || (nff && config_write_nff()))
     {
         MessageBox(
             hwnd, "Could not load config file.", "Warning",
@@ -136,7 +135,7 @@ static void window_colour(HWND hwnd)
             GetGValue(cc.rgbResult) <<  8 |
             GetBValue(cc.rgbResult) <<  0;
     }
-    window_config_write(hwnd);
+    window_config_write(hwnd, true);
 }
 
 static void window_help(HWND hwnd)
@@ -166,7 +165,6 @@ static void window_about(HWND hwnd)
 static void window_launch(HWND hwnd)
 {
     char args[0x8000];
-    char name[0x80];
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
     BOOL success;
@@ -190,14 +188,13 @@ static void window_launch(HWND hwnd)
         window_error(hwnd, "The 'Username' field cannot be blank.");
         return;
     }
+    snprintf(
+        args, sizeof(args), "sm64net.exe %s %s %d config.nff",
+        g_config.proc, g_config.addr, g_config.port
+    );
     ZeroMemory(&pi, sizeof(pi));
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    menu_h_m(name, g_config.name, sizeof(g_config.name));
-    snprintf(
-        args, sizeof(args), "sm64net.exe %s %s %d %06X %s",
-        g_config.proc, g_config.addr, g_config.port, g_config.colour, name
-    );
     success = CreateProcess(
         NULL, args, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi
     );
@@ -242,7 +239,7 @@ static void window_init(HWND hwnd)
     if (config_read())
     {
         window_about(hwnd);
-        window_config_write(hwnd);
+        window_config_write(hwnd, true);
     }
     window_update = false;
     SendMessage(
@@ -289,7 +286,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                     if (HIWORD(wparam) == EN_CHANGE && window_update)
                     {
                         window_update = false;
-                        window_config_write(hwnd);
+                        window_config_write(hwnd, i == W_E_NAME);
                         window_update = true;
                     }
                     break;

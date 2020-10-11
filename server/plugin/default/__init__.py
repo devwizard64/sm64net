@@ -3,28 +3,23 @@
 #       This project is licensed under the GNU General Public License
 #       version 2.  See LICENSE for more information.
 
-import nff
-
 def init():
     return
 
 def destroy():
     return
 
-def update_connect(s, i, sock, addr):
-    nff.write_file(sock, "plugin/default/build/main.nff")
-
-def update_udp(s, i, data, a):
-    return
-
-def update_tcp(s, i, data):
-    return
-
-def update_tcp_cmd(s, i, data, cmd):
-    return
-
-def update_disconnect(s, i):
-    return
-
 def update():
+    return
+
+def np_update(np):
+    return
+
+def np_update_connect(np):
+    np.nff_write_file("plugin/default/build/main.nff")
+
+def np_update_disconnect(np):
+    return
+
+def np_update_tcp(np, cmd, data):
     return

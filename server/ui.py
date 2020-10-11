@@ -29,7 +29,7 @@ def update():
     y += 2
     stdscr.addstr(y, 0, "Clients:" + 72*" ", curses.A_REVERSE)
     y += 1
-    l = len(server.sockets)
+    l = len(server.net_player_table)
     h = l//2
     for i in range(h):
         y = 3 + (i%h)
@@ -38,14 +38,11 @@ def update():
         for x in range(2):
             ln = ""
             n = h*x+i
-            if server.sockets[n] != None:
-                ln += " %02d " % n
-            else:
-                ln += "    "
-            if server.names[n] != None:
-                ln += server.names[n]
-                if len(ln) > 38:
-                    ln = ln[:35] + "..."
+            np = server.net_player_table[n]
+            if np != None:
+                ln += " %02d %s" % (n, np.name if np.name != None else "<null>")
+            if len(ln) > 38:
+                ln = ln[:35] + "..."
             ln += (38-len(ln))*" "
             s += ln
             if x == 0:

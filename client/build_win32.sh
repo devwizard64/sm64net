@@ -6,19 +6,15 @@
 #       version 2.  See LICENSE for more information.
 
 set -e
+CC="i686-w64-mingw32-gcc -O2"
 source build_init.sh
-i686-w64-mingw32-gcc -mconsole \
-    -O2 -Wall -Wextra -Wpedantic -I ../include -D _VERSION=\"$VERSION\" \
-    -o build/sm64net.exe \
+$CC -mconsole -o build/sm64net.exe \
     src/client/main.c \
     src/client/mem.c \
     src/client/net.c \
     -l ws2_32
-i686-w64-mingw32-gcc -mwindows \
-    -O2 -Wall -Wextra -Wpedantic -I ../include -D _VERSION=\"$VERSION\" \
-    -o build/SM64NetLauncher.exe \
+$CC -mwindows -o build/SM64NetLauncher.exe \
     src/launcher/main.c \
     src/launcher/window.c \
     src/launcher/config.c \
-    src/launcher/menu.c \
     -l comctl32

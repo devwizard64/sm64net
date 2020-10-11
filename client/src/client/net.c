@@ -49,6 +49,7 @@ WINSOCK_API_LINKAGE int WSAAPI WSAPoll(
 #include "assert.h"
 #include "mem.h"
 
+#define W(i) (b[(i)+0] << 24 | b[(i)+1] << 16 | b[(i)+2] << 8 | b[(i)+3])
 #define np_u32(x) (x##_0 << 24 | x##_1 << 16 | x##_2 << 8 | x##_3 << 0)
 
 static int net_tcp_socket;
@@ -93,7 +94,51 @@ static bool sendall(int sockfd, const void *buf, size_t len)
     return false;
 }
 
-bool net_init(const char *addr, long int port, u32 colour, u8 *name)
+static bool nff_write(const char *fn)
+{
+    FILE  *f;
+    u8    *data;
+    u8    *b;
+    size_t size;
+    f = fopen(fn, "rb");
+    if (f == NULL)
+    {
+        fprintf(stderr, "error: could not read '%s'\n", fn);
+        return true;
+    }
+    fseek(f, 0, SEEK_END);
+    size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    data = b = malloc(size);
+    fread(data, 1, size, f);
+    fclose(f);
+    if (W(0x00) != 0x4E464600)
+    {
+        fprintf(stderr, "error: '%s' is not a valid NFF file\n", fn);
+        free(data);
+        return true;
+    }
+    while (true)
+    {
+        u32 addr  = W(0x04);
+        u32 start = W(0x08);
+        u32 end   = W(0x0C);
+        b += 0x0C;
+        if (addr == 0x00000000)
+        {
+            break;
+        }
+        if (mem_write(addr, data+start, end-start))
+        {
+            free(data);
+            return true;
+        }
+    }
+    free(data);
+    return false;
+}
+
+bool net_init(const char *addr, long int port, const char **argv, int argc)
 {
     int error;
 #ifdef WIN32
@@ -170,15 +215,11 @@ bool net_init(const char *addr, long int port, u32 colour, u8 *name)
     );
     assert_msg(error < 0, "bind() failed");
     net_udp_addr.sin_addr.s_addr = net_tcp_addr.sin_addr.s_addr;
+    while (argc > 0)
     {
-        struct net_player_t np;
-        memset(&np, 0x00, sizeof(np));
-        memcpy(&np.np_name, name, sizeof(np.np_name)*NET_PLAYER_NAME_LEN);
-        np.np_colour_0 = colour >> 16;
-        np.np_colour_1 = colour >>  8;
-        np.np_colour_2 = colour >>  0;
-        np.np_colour_3 = 0xFF;
-        assert(mem_write(sm64_g_net_players, &np, sizeof(np)));
+        assert(nff_write(*argv));
+        argv++;
+        argc--;
     }
     puts("Connected");
     return false;
@@ -190,14 +231,16 @@ bool net_update(void)
     struct net_player_t np;
     struct pollfd pollfds[2];
     memset(&np.sys, 0x00, sizeof(np.sys));
-    assert(mem_read(sm64_g_net_players, &np, sizeof(np.udp) + sizeof(np.tcp)));
+    assert(mem_read(
+        net_player_table, &np, sizeof(np.udp) + sizeof(np.tcp)
+    ));
     /* tcp write */
     if (np.np_tcp_id != 0)
     {
         assert(sendall(net_tcp_socket, &np.tcp, sizeof(np.tcp)));
         np.np_tcp_id = 0;
         assert(mem_write(
-            sm64_g_net_players + sizeof(np.udp), &np.np_tcp_id,
+            net_player_table + sizeof(np.udp), &np.np_tcp_id,
             sizeof(np.np_tcp_id)
         ));
     }
@@ -246,7 +289,7 @@ bool net_update(void)
         else if (tcp_id < NET_PLAYER_LEN)
         {
             assert(mem_write(
-                sm64_g_net_players + sizeof(np)*tcp_id + sizeof(np.udp),
+                net_player_table + sizeof(np)*tcp_id + sizeof(np.udp),
                 &np.tcp, sizeof(np.tcp)
             ));
         }
@@ -267,7 +310,7 @@ bool net_update(void)
         udp_id = np_u32(np.np_udp_id);
         assert_msg(error < 0, "recvfrom() failed");
         assert(mem_write(
-            sm64_g_net_players + sizeof(np)*udp_id, &np.udp, sizeof(np.udp)
+            net_player_table + sizeof(np)*udp_id, &np.udp, sizeof(np.udp)
         ));
     }
 #ifdef WIN32

@@ -10,15 +10,6 @@
 
 #include "types.h"
 
-#define assert_main(s)                                                         \
-{                                                                              \
-    if (errno != 0)                                                            \
-    {                                                                          \
-        fprintf(stderr, "error: " s "\n");                                     \
-        return EXIT_FAILURE;                                                   \
-    }                                                                          \
-}
-
 #define assert_msg(c, s)                                                       \
 {                                                                              \
     if (c)                                                                     \

@@ -10,7 +10,7 @@
 
 #include "types.h"
 
-extern bool net_init(const char *, long int, u32, u8 *);
+extern bool net_init(const char *, long int, const char **, int);
 extern bool net_update(void);
 
 #endif /* _NET_H_ */

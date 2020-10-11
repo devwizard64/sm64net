@@ -8,7 +8,7 @@
 .include "../include/sm64.asm"
 .include "../include/sm64net.asm"
 
-.open "../donor/nsme.z64", "build/sm64net.z64", 0
+.open "../donor/UNSME0.z64", "build/sm64net.z64", 0
 
 .definelabel g_usb_start,                                       0x8038EEF0
 .definelabel g_usb_end,                                         0x8038F800
@@ -31,7 +31,7 @@ init:
 .org mem_init_main2
 .skip 0x98
     j       init
-.org game_main
+.org app_main
 .skip 0xA0
     jal     usb_update
 

@@ -10,43 +10,59 @@
 .include "../../../include/sm64net.asm"
 .sym on
 
+.definelabel _CHARACTER, 0
+
 .create "build/main.nff", 0
 
-.definelabel g_net_gfx_heap_start,      g_net_players + 0x8000
-.definelabel g_net_main_start,          g_net_gfx_heap_start + 0x6000
-.definelabel g_net_motion_heap_start,   0x8005C000 - 0x800*64
-.definelabel g_net_gfx_start,           g_net_motion_heap_start
-.definelabel g_net_hook_start,          game_main + 0xF0
+NET_MOTION_PAGE_LEN     equ 64
+NET_MOTION_PAGE_SIZE    equ 0x800
+
+.definelabel net_motion_heap,   \
+    0x8005C000 - (1+NET_MOTION_PAGE_SIZE)*NET_MOTION_PAGE_LEN
+
+.definelabel net_main_start,    \
+    net_player_table + NET_PLAYER_SIZE*NET_PLAYER_LEN
+.ifdef _CHARACTER
+.definelabel net_gfx_start,     0x80400000
+.definelabel net_gfx_heap_end,  0x80800000
+.endif
+.definelabel net_hook_start,    app_main + 0xF0
 
 .dw 0x4E464600
-.dw g_net_main_start, seg_net_main_start, seg_net_main_end
-.dw g_net_gfx_start,  seg_net_gfx_start,  seg_net_gfx_end
-.dw g_net_hook_start, seg_net_hook_start, seg_net_hook_end
+.dw net_main_start,   seg_net_main_start,   seg_net_main_end
+.ifdef _CHARACTER
+.dw net_gfx_start,    seg_net_gfx_start,    seg_net_gfx_end
+.endif
+.dw net_hook_start,   seg_net_hook_start,   seg_net_hook_end
 .dw 0x00000000
 
 .headersize 0
 seg_net_main_start:
-.base g_net_main_start
+.base net_main_start
     .importobj "build/src/main.o"
-    .if . > g_net_gfx_start
-        .error "seg_net_main too large (0x" + tohex(. - g_net_gfx_start) + ")"
+    .if . > net_motion_heap
+        .error "net_main too large (0x" + tohex(. - net_motion_heap) + ")"
     .endif
 .headersize 0
 seg_net_main_end:
 
+.ifdef _CHARACTER
 .headersize 0
 seg_net_gfx_start:
-.base g_net_gfx_start
-    .importobj "build/src/gfx_object_net_player.o"
+.base net_gfx_start
+    .importobj "src/gfx_metaknight.o"
+    .importobj "src/script_metaknight.o"
+    net_gfx_heap_start:
 .headersize 0
 seg_net_gfx_end:
+.endif
 
 .headersize 0
 seg_net_hook_start:
-.base g_net_hook_start
+.base net_hook_start
     jal     main
     nop
-    b       game_main + 0x80
+    b       app_main + 0x80
     nop
 .headersize 0
 seg_net_hook_end:

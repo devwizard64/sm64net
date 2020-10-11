@@ -11,7 +11,6 @@
 #include <errno.h>
 
 #include "types.h"
-#include "sm64net.h"
 
 #include "assert.h"
 #include "mem.h"
@@ -21,11 +20,7 @@ int main(int argc, const char **argv)
 {
     const char *proc;
     const char *addr;
-    const char *str;
     long int port;
-    u32 colour;
-    u32 i;
-    u8  name[NET_PLAYER_NAME_LEN];
     puts(
         "SM64Net Client " _VERSION "\n"
         "Copyright (C) 2019, 2020  devwizard\n"
@@ -33,10 +28,10 @@ int main(int argc, const char **argv)
         "2.  See\n"
         "LICENSE for more information."
     );
-    if (argc != 6)
+    if (argc < 4)
     {
         fprintf(
-            stderr, "usage: %s <proc> <addr> <port> <colour> <name>\n",
+            stderr, "usage: %s <proc> <addr> <port> [nff ...]\n",
             argv[0]
         );
         return EXIT_FAILURE;
@@ -44,21 +39,12 @@ int main(int argc, const char **argv)
     proc = argv[1];
     addr = argv[2];
     port = strtol(argv[3], NULL, 0);
-    assert_main("invalid port");
-    colour = strtol(argv[4], NULL, 16);
-    assert_main("invalid colour");
-    memset(name, 0xFF, sizeof(name));
-    str = argv[5];
-    for (i = 0; *str != 0x00 && i < NET_PLAYER_NAME_LEN-1; i++)
+    if (errno != 0)
     {
-        char n[3];
-        n[0] = *str++;
-        n[1] = *str++;
-        n[2] = 0x00;
-        name[i] = strtol(n, NULL, 16);
-        assert_main("invalid name");
+        fprintf(stderr, "error: invalid port\n");
+        return EXIT_FAILURE;
     }
-    if (mem_init(proc) || net_init(addr, port, colour, name))
+    if (mem_init(proc) || net_init(addr, port, argv+4, argc-4))
     {
     #ifdef WIN32
         getchar();
