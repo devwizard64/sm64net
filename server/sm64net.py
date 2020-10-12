@@ -83,7 +83,7 @@ class net_player_t:
                 if write:
                     dst, src, n = np, self, s if s != 0 else i
                 else:
-                    dst, src, n = self, np, i if i != 0 else i
+                    dst, src, n = self, np, i if i != 0 else s
                 if tcp:
                     w, d = dst.write_tcp, src.tcp
                 else:
