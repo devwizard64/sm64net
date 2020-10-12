@@ -224,7 +224,7 @@ static void net_player_update_self_location(
 
 static void net_player_update_peer_location(struct net_player_t *np)
 {
-    if (location_draw)
+    if (location_draw && np->np_timer > 0)
     {
         if (location_index >= location_start && location_y >= 20)
         {
@@ -450,7 +450,7 @@ static Gfx *gfx_net_player_callback(
                     src++;
                     size -= sizeof(*dst);
                 }
-                while (size != 0);
+                while (size > 0);
                 dst->w.w0 = 0x06010000;
                 dst->w.w1 = (u32)gfx_net_player_name_end;
             }
@@ -485,7 +485,7 @@ static void *net_motion_alloc(size_t size)
     {
         for (i = 0; i < pages; i++)
         {
-            if (net_motion_heap.page[page+i] != 0)
+            if (net_motion_heap.page[page+i] > 0)
             {
                 goto end;
             }
@@ -531,7 +531,7 @@ static void net_player_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
         dst++;
         src++;
     }
-    while (--len != 0);
+    while (--len > 0);
 }
 
 static void net_player_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
@@ -559,7 +559,7 @@ static void net_player_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
         dst++;
         src++;
     }
-    while (--len != 0);
+    while (--len > 0);
 }
 
 static void net_player_init_self(struct net_player_t *np)
@@ -579,6 +579,21 @@ static void net_player_init_peer(struct net_player_t *np)
     np->np_object     = NULL;
     np->np_motion     = NULL;
     np->np_motion_src = 0xFF;
+}
+
+static void net_player_destroy(struct net_player_t *np)
+{
+    if (np->np_object != NULL)
+    {
+        ((struct object_t *)np->np_object)->flag = 0;
+        np->np_object = NULL;
+    }
+    if (np->np_motion != NULL)
+    {
+        net_motion_free(np->np_motion);
+        np->np_motion = NULL;
+        np->np_motion_src = 0xFF;
+    }
 }
 
 static void net_player_update(struct net_player_t *np, struct object_t *object)
@@ -689,24 +704,15 @@ static void net_player_update_peer(struct net_player_t *np)
         np->np_object = NULL;
         return;
     }
+    net_player_update_peer_location(np);
     if
     (
-        np->np_timer == 0 ||
         np->np_stage_index != g_stage_index ||
-        np->np_world_index != g_world_index
+        np->np_world_index != g_world_index ||
+        np->np_timer == 0
     )
     {
-        if (np->np_object != NULL)
-        {
-            ((struct object_t *)np->np_object)->flag = 0;
-            np->np_object = NULL;
-        }
-        if (np->np_motion != NULL)
-        {
-            net_motion_free(np->np_motion);
-            np->np_motion = NULL;
-            np->np_motion_src = 0xFF;
-        }
+        net_player_destroy(np);
         return;
     }
     if (np->np_motion_dst != np->np_motion_src)
@@ -780,7 +786,6 @@ static void net_player_update_peer(struct net_player_t *np)
         object->gfx.scale[1] *= 0.75F + 4.0F/np->np_timer;
     }
     np->np_timer--;
-    net_player_update_peer_location(np);
     net_player_update(np, object);
 }
 
