@@ -88,7 +88,8 @@ class net_player_t:
                     w, d = dst.write_tcp, src.tcp
                 else:
                     w, d = dst.write_udp, src.udp
-                w(struct.pack(">I", n) + d[0x0004:])
+                if d != None:
+                    w(struct.pack(">I", n) + d[0x0004:])
     def sync_read_tcp(self):
         self.sync(False, True)
     def sync_write_udp(self, data):
