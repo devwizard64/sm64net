@@ -81,9 +81,9 @@ class net_player_t:
         for i, np in enumerate(server.net_player_table):
             if np != None and np != self:
                 if write:
-                    dst, src, n = np, self, i if i != 0 else s
+                    dst, src, n = np, self, s if s != 0 else i
                 else:
-                    dst, src, n = self, np, s if s != 0 else i
+                    dst, src, n = self, np, i if i != 0 else i
                 if tcp:
                     w, d = dst.write_tcp, src.tcp
                 else:
