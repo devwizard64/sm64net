@@ -17,16 +17,17 @@
 NET_MOTION_PAGE_LEN     equ 64
 NET_MOTION_PAGE_SIZE    equ 0x800
 
-.definelabel net_motion_heap,   \
-    0x8005C000 - (1+NET_MOTION_PAGE_SIZE)*NET_MOTION_PAGE_LEN
+.definelabel net_motion_heap_end,       0x8005C000
+.definelabel net_motion_heap,           \
+    net_motion_heap_end - (1+NET_MOTION_PAGE_SIZE)*NET_MOTION_PAGE_LEN
 
-.definelabel net_main_start,    \
+.definelabel net_main_start,            \
     net_player_table + NET_PLAYER_SIZE*NET_PLAYER_LEN
 .ifdef _CHARACTER
-.definelabel net_gfx_start,     0x80400000
-.definelabel net_gfx_heap_end,  0x80800000
+.definelabel net_gfx_start,             0x80400000
+.definelabel net_gfx_heap_end,          0x80800000
 .endif
-.definelabel net_hook_start,    app_main + 0xF0
+.definelabel net_hook_start,            app_main + 0xF0
 
 .dw 0x4E464600
 .dw net_main_start,   seg_net_main_start,   seg_net_main_end
@@ -41,7 +42,12 @@ seg_net_main_start:
 .base net_main_start
     .importobj "build/src/main.o"
     .if . > net_motion_heap
-        .error "net_main too large (0x" + tohex(. - net_motion_heap) + ")"
+        .error "net_main too large (0x" + tohex(.-net_motion_heap) + ")"
+    .endif
+    .importobj "src/script_metaknight.o"
+    .importobj "src/script_bandanadee.o"
+    .if . > net_motion_heap_end
+        .error "net_script too large (0x" + tohex(.-net_motion_heap_end) + ")"
     .endif
 .headersize 0
 seg_net_main_end:
@@ -51,8 +57,11 @@ seg_net_main_end:
 seg_net_gfx_start:
 .base net_gfx_start
     .importobj "src/gfx_metaknight.o"
-    .importobj "src/script_metaknight.o"
+    .importobj "src/gfx_bandanadee.o"
     net_gfx_heap_start:
+    .if . > net_gfx_heap_end
+        .error "net_script too large (0x" + tohex(.-net_gfx_heap_end) + ")"
+    .endif
 .headersize 0
 seg_net_gfx_end:
 .endif

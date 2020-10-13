@@ -271,13 +271,15 @@ struct character_t
 };
 
 extern const uintptr_t gfx_metaknight[];
+extern const uintptr_t gfx_bandanadee[];
 extern u8 net_gfx_heap_start[];
 extern u8 net_gfx_heap_end[];
 
 static const struct character_t net_character_table[] =
 {
     {NULL,           189},
-    {gfx_metaknight, 295},
+    {gfx_metaknight, 100},
+    {gfx_bandanadee, 100},
 };
 
 static struct gfx_t *net_gfx_table[lenof(net_character_table)];
