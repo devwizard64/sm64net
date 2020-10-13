@@ -16,6 +16,7 @@ def np_update(np):
     return
 
 def np_update_connect(np):
+    np.nff_write_file("plugin/hud_font.nff")
     np.nff_write_file("plugin/default/build/main.nff")
 
 def np_update_disconnect(np):

@@ -217,7 +217,8 @@ static void net_player_update_self_location(
                 location_start++;
             }
         }
-        location_y = 20 + 18*10;
+        location_y = 20 + 18*9;
+        hud_print_int(320-8 - 12*9, location_y, "%2d online", location_index);
         location_index = 1;
     }
 }
