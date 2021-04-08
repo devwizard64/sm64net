@@ -1,23 +1,23 @@
 #                   SM64Net - An Internet framework for SM64
-#                    Copyright (C) 2019, 2020  devwizard
-#       This project is licensed under the GNU General Public License
-#       version 2.  See LICENSE for more information.
+#                     Copyright (C) 2019 - 2021  devwizard
+#         This project is licensed under the terms of the GNU General
+#         Public License version 2.  See LICENSE for more information.
 
 import struct
 
 import server
 
-VERSION                 = "1.1.0"
+VERSION         = "1.1.1"
 
-NET_PORT                = 0x1100
+NET_PORT        = 0x1100
 
-NET_PLAYER_LEN          = 32
-NET_PLAYER_NAME_LEN     = 32
-NET_PLAYER_UDP_SIZE     = 0x0200
-NET_PLAYER_TCP_SIZE     = 0x0100
-NET_PLAYER_SYS_SIZE     = 0x0100
+NP_LEN          = 32
+NP_NAME_LEN     = 32
+NP_UDP_SIZE     = 0x0200
+NP_TCP_SIZE     = 0x0100
+NP_SYS_SIZE     = 0x0100
 
-np_name                 = 0x0008
+np_name         = 0x0008
 
 menu_table = (
     tuple("0123456789")                                 + \
@@ -39,7 +39,7 @@ menu_table = (
     ("[coin]", "[star]", "[x]", "[*]", "[star_outline]", "\\n", "")
 )
 
-class net_player_t:
+class np_t:
     def __init__(self, tcp, udp, addr):
         self.s_udp  = udp
         self.s_tcp  = tcp
@@ -77,8 +77,8 @@ class net_player_t:
         self.nff_write(self.nff_read(fn))
 
     def sync(self, write, tcp):
-        s = server.net_player_table.index(self)
-        for i, np in enumerate(server.net_player_table):
+        s = server.np_table.index(self)
+        for i, np in enumerate(server.np_table):
             if np != None and np != self:
                 if write:
                     dst, src, n = np, self, s if s != 0 else i
@@ -104,7 +104,7 @@ class net_player_t:
     def update_tcp(self, data):
         self.sync_write_tcp(data)
         start = np_name
-        end   = np_name + 1*(NET_PLAYER_NAME_LEN-1)
+        end   = np_name + 1*(NP_NAME_LEN-1)
         self.name = "".join([
             menu_table[struct.unpack(">B", self.tcp[c:c+1])[0]]
             for c in range(start, end)

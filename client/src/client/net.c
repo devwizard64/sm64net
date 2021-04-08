@@ -1,8 +1,8 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
@@ -43,14 +43,14 @@ WINSOCK_API_LINKAGE int WSAAPI WSAPoll(
 #include <poll.h>
 #endif
 
-#include "types.h"
-#include "sm64net.h"
+#include <types.h>
+#include <sm64net.h>
 
 #include "assert.h"
 #include "mem.h"
 
 #define W(i) (b[(i)+0] << 24 | b[(i)+1] << 16 | b[(i)+2] << 8 | b[(i)+3])
-#define np_u32(x) (x##_0 << 24 | x##_1 << 16 | x##_2 << 8 | x##_3 << 0)
+#define np_u32(x) (x##_b[0] << 24 | x##_b[1] << 16 | x##_b[2] << 8 | x##_b[3])
 
 static int net_tcp_socket;
 static int net_udp_socket;
@@ -58,7 +58,7 @@ static struct sockaddr_in net_tcp_addr;
 static struct sockaddr_in net_udp_addr;
 static bool net_banned = true;
 
-static bool recvall(int sockfd, void *buf, size_t len)
+static uint recvall(int sockfd, void *buf, size_t len)
 {
     size_t i = 0;
     do
@@ -80,7 +80,7 @@ static bool recvall(int sockfd, void *buf, size_t len)
     return false;
 }
 
-static bool sendall(int sockfd, const void *buf, size_t len)
+static uint sendall(int sockfd, const void *buf, size_t len)
 {
     size_t i = 0;
     do
@@ -94,7 +94,7 @@ static bool sendall(int sockfd, const void *buf, size_t len)
     return false;
 }
 
-static bool nff_write(const char *fn)
+static uint nff_write(const char *fn)
 {
     FILE  *f;
     u8    *data;
@@ -120,9 +120,9 @@ static bool nff_write(const char *fn)
     }
     while (true)
     {
-        u32 addr  = W(0x04);
-        u32 start = W(0x08);
-        u32 end   = W(0x0C);
+        uint addr  = W(0x04);
+        uint start = W(0x08);
+        uint end   = W(0x0C);
         b += 0x0C;
         if (addr == 0x00000000)
         {
@@ -138,7 +138,7 @@ static bool nff_write(const char *fn)
     return false;
 }
 
-bool net_init(const char *addr, long int port, const char **argv, int argc)
+uint net_init(const char *addr, long int port, const char **argv, int argc)
 {
     int error;
 #ifdef WIN32
@@ -225,28 +225,28 @@ bool net_init(const char *addr, long int port, const char **argv, int argc)
     return false;
 }
 
-bool net_update(void)
+uint net_update(void)
 {
     int error;
-    struct net_player_t np;
+    struct np_t np;
     struct pollfd pollfds[2];
-    memset(&np.sys, 0x00, sizeof(np.sys));
+    memset(np.sys, 0x00, sizeof(np.sys));
     assert(mem_read(
-        net_player_table, &np, sizeof(np.udp) + sizeof(np.tcp)
+        np_table, &np, sizeof(np.udp) + sizeof(np.tcp)
     ));
     /* tcp write */
     if (np.np_tcp_id != 0)
     {
-        assert(sendall(net_tcp_socket, &np.tcp, sizeof(np.tcp)));
+        assert(sendall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
         np.np_tcp_id = 0;
         assert(mem_write(
-            net_player_table + sizeof(np.udp), &np.np_tcp_id,
+            np_table + sizeof(np.udp), &np.np_tcp_id,
             sizeof(np.np_tcp_id)
         ));
     }
     /* udp write */
     error = sendto(
-        net_udp_socket, (void *)&np.udp, sizeof(np.udp), 0,
+        net_udp_socket, (void *)np.udp, sizeof(np.udp), 0,
         (struct sockaddr *)&net_udp_addr, sizeof(net_udp_addr)
     );
     assert_msg(error < 0, "sendto() failed");
@@ -267,7 +267,7 @@ bool net_update(void)
     if (pollfds[0].revents & POLLIN)
     {
         u32 tcp_id;
-        assert(recvall(net_tcp_socket, &np.tcp, sizeof(np.tcp)));
+        assert(recvall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
         tcp_id = np_u32(np.np_tcp_id);
         /* write request */
         if (tcp_id == 0x00000000)
@@ -286,11 +286,11 @@ bool net_update(void)
             free(data);
         }
         /* peer write */
-        else if (tcp_id < NET_PLAYER_LEN)
+        else if (tcp_id < NP_LEN)
         {
             assert(mem_write(
-                net_player_table + sizeof(np)*tcp_id + sizeof(np.udp),
-                &np.tcp, sizeof(np.tcp)
+                np_table + sizeof(np)*tcp_id + sizeof(np.udp),
+                np.tcp, sizeof(np.tcp)
             ));
         }
         else
@@ -305,12 +305,12 @@ bool net_update(void)
     {
         u32 udp_id;
         error = recvfrom(
-            net_udp_socket, (void *)&np.udp, sizeof(np.udp), 0, NULL, NULL
+            net_udp_socket, (void *)np.udp, sizeof(np.udp), 0, NULL, NULL
         );
         udp_id = np_u32(np.np_udp_id);
         assert_msg(error < 0, "recvfrom() failed");
         assert(mem_write(
-            net_player_table + sizeof(np)*udp_id, &np.udp, sizeof(np.udp)
+            np_table + sizeof(np)*udp_id, np.udp, sizeof(np.udp)
         ));
     }
 #ifdef WIN32

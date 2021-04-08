@@ -1,39 +1,31 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
-#include "types.h"
-#include "sm64.h"
-#include "sm64net.h"
-
-#define _LOCATION
-#define _CHARACTER
-
-#define NET_MOTION_PAGE_LEN     64
-#define NET_MOTION_PAGE_SIZE    0x800
+#include <types.h>
+#include <sm64.h>
+#include <sm64net.h>
 
 extern struct
 {
-    u8 page[NET_MOTION_PAGE_LEN];
-    u8 data[NET_MOTION_PAGE_LEN][NET_MOTION_PAGE_SIZE];
+    u8 page[NM_PAGE_LEN];
+    u8 data[NM_PAGE_LEN][NM_PAGE_SIZE];
 }
-net_motion_heap;
+nm_heap;
 
-extern struct gfx_t gfx_net_player;
-extern struct gfx_dl_billboard_t gfx_net_player_billboard;
-extern struct gfx_dl_scale_t gfx_net_player_scale;
-extern struct gfx_callback_t gfx_net_player_name;
-extern struct gfx_t gfx_net_player_gfx;
-extern struct gfx_callback_t gfx_net_player_end;
+extern struct g_t g_np;
+extern struct g_billboard_t g_np_billboard;
+extern struct g_scale_t g_np_scale;
+extern struct gc_t g_np_name;
+extern struct g_t g_np_gfx;
+extern struct gc_t g_np_end;
 
-static Gfx *gfx_net_player_callback(
-    s32 mode, struct gfx_callback_t *gfx, unused f32 mtxf[4][4]
-);
+static void *g_np_main(int mode, struct g_t *g, void *data);
 
-static const Gfx gfx_net_player_name_start[] =
+static const Gfx gfx_np_name_start[] =
 {
     {{0xE7000000, 0x00000000}},  /* G_RDPPIPESYNC       */
     {{0xB6000000, 0x00020000}},  /* G_CLEARGEOMETRYMODE */
@@ -43,7 +35,7 @@ static const Gfx gfx_net_player_name_start[] =
     {{0xB8000000, 0x00000000}},  /* G_ENDDL             */
 };
 
-static const Gfx gfx_net_player_name_end[] =
+static const Gfx gfx_np_name_end[] =
 {
     {{0xE7000000, 0x00000000}},  /* G_RDPPIPESYNC       */
     {{0xB7000000, 0x00020000}},  /* G_SETGEOMETRYMODE   */
@@ -53,90 +45,64 @@ static const Gfx gfx_net_player_name_end[] =
     {{0xB8000000, 0x00000000}},  /* G_ENDDL             */
 };
 
-static const uintptr_t obj_net_player[] =
+static const uintptr_t o_np[] =
 {
     0x00000000,
     0x0A000000,
 };
 
-struct gfx_t gfx_net_player =
+struct g_t g_np =
 {
-    GFX_TYPE_GFX,
-    GFX_FLAG_ENABLED,
-    &gfx_net_player,
-    &gfx_net_player,
-    NULL,
-    &gfx_net_player_billboard.gfx.gfx,
+    G_T_GFX, G_F_ENABLED,
+    &g_np, &g_np, NULL, &g_np_billboard.g.g,
 };
 
-struct gfx_dl_billboard_t gfx_net_player_billboard =
+struct g_billboard_t g_np_billboard =
 {
     {
         {
-            GFX_TYPE_DL_BILLBOARD,
-            GFX_FLAG_ENABLED,
-            &gfx_net_player_end.gfx,
-            &gfx_net_player_gfx,
-            &gfx_net_player,
-            &gfx_net_player_scale.gfx.gfx,
+            G_T_BILLBOARD, G_F_ENABLED,
+            &g_np_end.g, &g_np_gfx, &g_np, &g_np_scale.g.g,
         },
         NULL,
     },
-    {     0,    160,      0},
+    {0, 160, 0},
 };
 
-struct gfx_dl_scale_t gfx_net_player_scale =
+struct g_scale_t g_np_scale =
 {
     {
         {
-            GFX_TYPE_DL_SCALE,
-            GFX_FLAG_ENABLED,
-            &gfx_net_player_scale.gfx.gfx,
-            &gfx_net_player_scale.gfx.gfx,
-            &gfx_net_player_billboard.gfx.gfx,
-            &gfx_net_player_name.gfx,
+            G_T_SCALE, G_F_ENABLED,
+            &g_np_scale.g.g, &g_np_scale.g.g, &g_np_billboard.g.g, &g_np_name.g,
         },
         NULL,
     },
-    4.0F,
+    4,
 };
 
-struct gfx_callback_t gfx_net_player_name =
+struct gc_t g_np_name =
 {
     {
-        GFX_TYPE_CALLBACK,
-        GFX_RM_SPRITE << 8 | GFX_FLAG_ENABLED,
-        &gfx_net_player_name.gfx,
-        &gfx_net_player_name.gfx,
-        &gfx_net_player_scale.gfx.gfx,
-        NULL,
+        G_T_CALLBACK, G_R_SPRITE << 8 | G_F_ENABLED,
+        &g_np_name.g, &g_np_name.g, &g_np_scale.g.g, NULL,
     },
-    gfx_net_player_callback,
-    0x00000000,
+    g_np_main, 0,
 };
 
-struct gfx_t gfx_net_player_gfx =
+struct g_t g_np_gfx =
 {
-    GFX_TYPE_GFX,
-    GFX_FLAG_ENABLED,
-    &gfx_net_player_billboard.gfx.gfx,
-    &gfx_net_player_end.gfx,
-    &gfx_net_player,
-    NULL,
+    G_T_GFX, G_F_ENABLED,
+    &g_np_billboard.g.g, &g_np_end.g, &g_np, NULL,
 };
 
-struct gfx_callback_t gfx_net_player_end =
+struct gc_t g_np_end =
 {
     {
-        GFX_TYPE_CALLBACK,
-        GFX_RM_SPRITE << 8 | GFX_FLAG_ENABLED,
-        &gfx_net_player_gfx,
-        &gfx_net_player_billboard.gfx.gfx,
-        &gfx_net_player,
-        NULL,
+        G_T_CALLBACK, G_R_SPRITE << 8 | G_F_ENABLED,
+        &g_np_gfx, &g_np_billboard.g.g, &g_np, NULL,
     },
-    gfx_net_player_callback,
-    0x00000001,
+    g_np_main, 1,
 };
 
 static s16  net_rot_head_backup[2];
@@ -192,9 +158,8 @@ static u8   location_start = 1;
 static u8   location_index = 1;
 static bool location_draw = false;
 
-static void net_player_update_self_location(
-    unused struct net_player_t *np,
-    struct player_t *player
+static void np_update_self_location(
+    unused struct np_t *np, struct player_t *player
 )
 {
     if (player->pad->down & L_TRIG)
@@ -212,25 +177,25 @@ static void net_player_update_self_location(
         }
         if (player->pad->down & U_JPAD)
         {
-            if (location_start < lenof(net_player_table))
+            if (location_start < lenof(np_table))
             {
                 location_start++;
             }
         }
         location_y = 20 + 18*9;
-        hud_print_int(320-8 - 12*9, location_y, "%2d online", location_index);
+        print_int(320-8 - 12*9, location_y, "%2d online", location_index);
         location_index = 1;
     }
 }
 
-static void net_player_update_peer_location(struct net_player_t *np)
+static void np_update_peer_location(struct np_t *np)
 {
     if (location_draw && np->np_timer > 0)
     {
         if (location_index >= location_start && location_y >= 20)
         {
-            const char *str = str_stage_table[np->np_stage_index];
-            switch (np->np_stage_index << 4 | np->np_world_index)
+            const char *str = str_stage_table[np->np_stage];
+            switch (np->np_stage << 4 | np->np_world)
             {
                 case 0x052: str = "CCM Slide";  break;
                 case 0x082: str = "Pyramid";    break;
@@ -250,20 +215,20 @@ static void net_player_update_peer_location(struct net_player_t *np)
             {
                 str = "???";
             }
-            hud_print_int(8, location_y, "%2d", location_index);
-            hud_print(8 + 12*3, location_y, str);
+            print_int(8, location_y, "%2d", location_index);
+            print(8 + 12*3, location_y, str);
             location_y -= 18;
         }
         location_index++;
     }
 }
 #else
-#define net_player_update_self_location(np, player)
-#define net_player_update_peer_location(np)
+#define np_update_self_location(np, player)
+#define np_update_peer_location(np)
 #endif
 
 #ifdef _CHARACTER
-#define /* 0x022C */    np_gfx_index        tcp.u8[0x2C]
+#define /* 0x022C */    np_gfx_index        tcp[0x0B].u8[0]
 
 struct character_t
 {
@@ -273,6 +238,7 @@ struct character_t
 
 extern const uintptr_t gfx_metaknight[];
 extern const uintptr_t gfx_bandanadee[];
+
 extern u8 net_gfx_heap_start[];
 extern u8 net_gfx_heap_end[];
 
@@ -283,25 +249,21 @@ static const struct character_t net_character_table[] =
     {gfx_bandanadee, 100},
 };
 
-static struct gfx_t *net_gfx_table[lenof(net_character_table)];
+static struct g_t *net_gfx_table[lenof(net_character_table)];
 
-static void net_player_init_self_character(struct net_player_t *np)
+static void np_init_self_character(struct np_t *np)
 {
     np->np_gfx_index = 0;
 }
 
-static void net_player_update_character(
-    struct net_player_t *np,
-    unused struct object_t *object
-)
+static void np_update_character(struct np_t *np, unused struct object_t *object)
 {
     np->np_motion_height = net_character_table[np->np_gfx_index].height;
     np->np_gfx = net_gfx_table[np->np_gfx_index];
 }
 
-static void net_player_update_self_character(
-    unused struct net_player_t *np,
-    struct player_t *player
+static void np_update_self_character(
+    unused struct np_t *np, struct player_t *player
 )
 {
     if (player->pad->down & L_JPAD)
@@ -325,30 +287,28 @@ static void net_player_update_self_character(
 static void net_init_character(void)
 {
     struct heap_t heap;
-    u32 i;
+    uint i;
     heap.size  = net_gfx_heap_end - net_gfx_heap_start;
     heap.used  = 0;
     heap.start = net_gfx_heap_start;
     heap.free  = net_gfx_heap_start;
-    net_gfx_table[0] = g_gfx_object_table[0x01];
+    net_gfx_table[0] = world_gfx_table[0x01];
     for (i = 1; i < lenof(net_character_table); i++)
     {
-        net_gfx_table[i] = gfx_script_compile(
-            &heap, net_character_table[i].script
-        );
+        net_gfx_table[i] = script_g_main(&heap, net_character_table[i].script);
     }
 }
 #else
-#define net_player_init_self_character(np)
-#define net_player_update_character(np)
-#define net_player_update_self_character(np)
+#define np_init_self_character(np)
+#define np_update_character(np)
+#define np_update_self_character(np)
 #define net_init_character()
 #endif
 
-static u32 menu_str_w(const u8 *str)
+static uint menu_str_w(const u8 *str)
 {
-    u32 w = 0;
-    u32 l = 0;
+    uint w = 0;
+    uint l = 0;
     while (*str != 0xFF)
     {
         if (*str == 0xFE)
@@ -359,7 +319,7 @@ static u32 menu_str_w(const u8 *str)
             }
             l = 0;
         }
-        l += g_menu_kern[*str];
+        l += message_kern[*str];
         str++;
     }
     if (w < l)
@@ -369,9 +329,9 @@ static u32 menu_str_w(const u8 *str)
     return w;
 }
 
-static u32 menu_str_h(const u8 *str)
+static uint menu_str_h(const u8 *str)
 {
-    u32 h = 0;
+    uint h = 0;
     while (*str != 0xFF)
     {
         if (*str == 0xFE)
@@ -383,64 +343,63 @@ static u32 menu_str_h(const u8 *str)
     return h;
 }
 
-static Gfx *gfx_net_player_callback(
-    s32 mode, struct gfx_callback_t *gfx, unused f32 mtxf[4][4]
-)
+static void *g_np_main(int mode, struct g_t *g, unused void *data)
 {
     if (mode == 1)
     {
-        struct player_gfx_t *player_gfx        = &g_player_gfx_table[0];
-        struct player_gfx_t *player_gfx_backup = &g_player_gfx_table[1];
-        struct camera_t *camera = (struct camera_t *)g_gfx_camera->gfx.arg;
-        struct object_t *object = (struct object_t *)g_gfx_object;
-        if (gfx->arg == 0)
+        struct gc_t *gc = (struct gc_t *)g;
+        struct player_gfx_t *player_gfx        = &player_gfx_table[0];
+        struct player_gfx_t *player_gfx_backup = &player_gfx_table[1];
+        struct camera_t *camera = (struct camera_t *)gfx_camera->g.arg;
+        struct object_t *object = (struct object_t *)gfx_object;
+        if (gc->arg == 0)
         {
-            struct net_player_t *np = object->mem.ptr[0x49];
-            Gfx *dl;
-            Gfx *dl_backup;
+            struct np_t *np = object->mem[79].ptr;
+            Gfx *gfx;
+            Gfx *gfx_backup;
             ptrdiff_t size;
-            u32 w;
-            u32 h;
+            uint w;
+            uint h;
             *player_gfx_backup = *player_gfx;
-            *net_rot_head_backup = *g_camera_rot_head;
+            *net_rot_head_backup = *camera_rot_head;
             net_camera_mode_backup = camera->mode;
-            if (object != g_object_p1)
+            if (object != object_p1)
             {
-                player_gfx->state  = 0x20810446;
-                player_gfx->head   =  np->np_gfx_flag_h >>  6 & 0x0003;
-                player_gfx->eyes   = (np->np_gfx_flag_h >>  3 & 0x0007) + 1;
-                player_gfx->gloves =  np->np_gfx_flag_h >>  0 & 0x0007;
-                player_gfx->wings  =  np->np_gfx_flag_l >> 15 & 0x0001;
-                player_gfx->cap    =  np->np_gfx_flag_l >>  0 & 0x03FF;
-                player_gfx->hold   =  np->np_gfx_flag_l >> 13 & 0x0003;
-                player_gfx->punch  =  np->np_gfx_flag_h >>  8 & 0x00FF;
+                player_gfx->state = 0x20810446;
+                player_gfx->head  =  np->np_gfx_flag_h >>  6 & 0x0003;
+                player_gfx->eye   = (np->np_gfx_flag_h >>  3 & 0x0007) + 1;
+                player_gfx->glove =  np->np_gfx_flag_h >>  0 & 0x0007;
+                player_gfx->wing  =  np->np_gfx_flag_l >> 15 & 0x0001;
+                player_gfx->cap   =  np->np_gfx_flag_l >>  0 & 0x03FF;
+                player_gfx->hold  =  np->np_gfx_flag_l >> 13 & 0x0003;
+                player_gfx->punch =  np->np_gfx_flag_h >>  8 & 0x00FF;
                 player_gfx->rot_torso[0] = np->np_rot_torso_x;
                 player_gfx->rot_torso[1] = np->np_rot_torso_y;
                 player_gfx->rot_torso[2] = np->np_rot_torso_z;
-                g_camera_rot_head[0] = np->np_rot_head_x;
-                g_camera_rot_head[1] = np->np_rot_head_y;
+                camera_rot_head[0] = np->np_rot_head_x;
+                camera_rot_head[1] = np->np_rot_head_y;
                 camera->mode = 0x06;
             }
-            gfx_net_player_gfx.child =
-                (np->np_gfx_flag_l & NET_PLAYER_GFX_BODY) ? np->np_gfx : NULL;
-            if (!(np->np_gfx_flag_l & NET_PLAYER_GFX_NAME))
+            g_np_gfx.child =
+                (np->np_gfx_flag_l & NP_GFX_BODY) ? np->np_gfx : NULL;
+            if (!(np->np_gfx_flag_l & NP_GFX_NAME))
             {
                 return NULL;
             }
-            dl_backup = g_dl;
-            (&np->np_name)[NET_PLAYER_NAME_LEN-1] = 0xFF;
+            gfx_backup = app_gfx;
+            (&np->np_name)[NP_NAME_LEN-1] = 0xFF;
             w = menu_str_w(&np->np_name);
             h = menu_str_h(&np->np_name);
-            menu_print(-w >> 1, h, &np->np_name);
-            size = (u8 *)g_dl - (u8 *)dl_backup;
-            dl = mem_alloc_gfx(sizeof(*dl)*3 + size);
-            g_dl = dl_backup;
-            if (dl != NULL)
+            message_print(-w >> 1, h, &np->np_name);
+            size = (u8 *)app_gfx - (u8 *)gfx_backup;
+            gfx = mem_alloc_gfx(sizeof(*gfx)*3 + size);
+            app_gfx = gfx_backup;
+            if (gfx != NULL)
             {
-                Gfx *dst = dl;
-                Gfx *src = dl_backup;
+                Gfx *dst = gfx;
+                Gfx *src = gfx_backup;
                 dst->w.w0 = 0x06000000;
-                dst->w.w1 = (u32)gfx_net_player_name_start;
+                dst->w.w1 = (uintptr_t)gfx_np_name_start;
                 dst++;
                 dst->w.w0 = 0xFB000000;
                 dst->w.w1 = np->np_colour;
@@ -455,16 +414,16 @@ static Gfx *gfx_net_player_callback(
                 }
                 while (size > 0);
                 dst->w.w0 = 0x06010000;
-                dst->w.w1 = (u32)gfx_net_player_name_end;
+                dst->w.w1 = (uintptr_t)gfx_np_name_end;
             }
-            return dl;
+            return gfx;
         }
         else
         {
-            if (object != g_object_p1)
+            if (object != object_p1)
             {
                 *player_gfx = *player_gfx_backup;
-                *g_camera_rot_head = *net_rot_head_backup;
+                *camera_rot_head = *net_rot_head_backup;
                 camera->mode = net_camera_mode_backup;
             }
         }
@@ -472,58 +431,56 @@ static Gfx *gfx_net_player_callback(
     return NULL;
 }
 
-static void *net_motion_alloc(size_t size)
+static void *nm_alloc(size_t size)
 {
     u32 pages;
     u32 page;
     u32 i;
-    pages =
-        (size + sizeof(net_motion_heap.data[0])-1) /
-        sizeof(net_motion_heap.data[0]);
+    pages = (size+sizeof(nm_heap.data[0])-1) / sizeof(nm_heap.data[0]);
     if (pages >= 0x100)
     {
         return NULL;
     }
-    for (page = 0; page < lenof(net_motion_heap.page); page++)
+    for (page = 0; page < lenof(nm_heap.page); page++)
     {
         for (i = 0; i < pages; i++)
         {
-            if (net_motion_heap.page[page+i] > 0)
+            if (nm_heap.page[page+i] > 0)
             {
                 goto end;
             }
         }
-        net_motion_heap.page[page] = pages;
+        nm_heap.page[page] = pages;
         for (i = 1; i < pages; i++)
         {
-            net_motion_heap.page[page+i] = 1;
+            nm_heap.page[page+i] = 1;
         }
-        return &net_motion_heap.data[page];
+        return &nm_heap.data[page];
     end:;
     }
     return NULL;
 }
 
-static void net_motion_free(void *ptr)
+static void nm_free(void *ptr)
 {
     u32 pages;
     u32 page;
     u32 i;
-    page = (typeof(&net_motion_heap.data[0]))ptr - net_motion_heap.data;
-    pages = net_motion_heap.page[page];
+    page = (typeof(&nm_heap.data[0]))ptr - nm_heap.data;
+    pages = nm_heap.page[page];
     for (i = 0; i < pages; i++)
     {
-        net_motion_heap.page[page+i] = 0;
+        nm_heap.page[page+i] = 0;
     }
 }
 
-static void net_player_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
+static void np_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
 {
-    f32 div = (delay > 0 ? delay : 1) * (3.0F/2.0F);
+    f32 div = (delay > 0 ? delay : 1) * (3/2.0F);
     do
     {
         f32 d = *src - *dst;
-        if (d > -8.0F && d < 8.0F)
+        if (d > -8 && d < 8)
         {
             *dst = *src;
         }
@@ -537,7 +494,7 @@ static void net_player_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
     while (--len > 0);
 }
 
-static void net_player_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
+static void np_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
 {
     s32 div = (delay > 0 ? delay : 1) * 3/2;
     do
@@ -565,26 +522,26 @@ static void net_player_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
     while (--len > 0);
 }
 
-static void net_player_init_self(struct net_player_t *np)
+static void np_init_self(struct np_t *np)
 {
-    np->np_timer      = NET_PLAYER_TIMEOUT;
-    np->np_gfx_flag_l = NET_PLAYER_GFX_BODY | NET_PLAYER_GFX_NAME;
-    np->np_gfx        = g_gfx_object_table[0x01];
+    np->np_timer      = NP_TIMEOUT;
+    np->np_gfx_flag_l = NP_GFX_BODY | NP_GFX_NAME;
+    np->np_gfx        = world_gfx_table[1];
     np->np_object     = NULL;
-    net_player_init_self_character(np);
-    np->np_tcp_id     = 0x00000001;
+    np_init_self_character(np);
+    np->np_tcp_id     = 1;
 }
 
-static void net_player_init_peer(struct net_player_t *np)
+static void np_init_peer(struct np_t *np)
 {
     np->np_timer      = 0;
-    np->np_gfx        = g_gfx_object_table[0x01];
+    np->np_gfx        = world_gfx_table[1];
     np->np_object     = NULL;
     np->np_motion     = NULL;
-    np->np_motion_src = 0xFF;
+    np->np_motion_src = -1;
 }
 
-static void net_player_destroy(struct net_player_t *np)
+static void np_destroy(struct np_t *np)
 {
     if (np->np_object != NULL)
     {
@@ -593,39 +550,36 @@ static void net_player_destroy(struct net_player_t *np)
     }
     if (np->np_motion != NULL)
     {
-        net_motion_free(np->np_motion);
+        nm_free(np->np_motion);
         np->np_motion = NULL;
         np->np_motion_src = 0xFF;
     }
 }
 
-static void net_player_update(struct net_player_t *np, struct object_t *object)
+static void np_update(struct np_t *np, struct object_t *object)
 {
-    object->mem.ptr[0x49] = np;
-    net_player_update_character(np, object);
+    object->mem[79].ptr = np;
+    np_update_character(np, object);
 }
 
-static void net_player_update_self(
-    struct net_player_t *np,
-    struct player_t *player
-)
+static void np_update_self(struct np_t *np, struct player_t *player)
 {
     struct player_gfx_t *player_gfx = player->gfx;
     struct object_t     *object     = player->object;
-    s32 eyes;
+    int eye;
     if (player_gfx == NULL || object == NULL)
     {
         return;
     }
-    np->np_pos_x       = object->gfx.pos[0];
-    np->np_pos_y       = object->gfx.pos[1];
-    np->np_pos_z       = object->gfx.pos[2];
-    np->np_scale_x     = object->gfx.scale[0];
-    np->np_scale_y     = object->gfx.scale[1];
-    np->np_scale_z     = object->gfx.scale[2];
-    np->np_rot_x       = object->gfx.rot[0];
-    np->np_rot_y       = object->gfx.rot[1];
-    np->np_rot_z       = object->gfx.rot[2];
+    np->np_pos_x       = object->g.pos[0];
+    np->np_pos_y       = object->g.pos[1];
+    np->np_pos_z       = object->g.pos[2];
+    np->np_scale_x     = object->g.scale[0];
+    np->np_scale_y     = object->g.scale[1];
+    np->np_scale_z     = object->g.scale[2];
+    np->np_rot_x       = object->g.rot[0];
+    np->np_rot_y       = object->g.rot[1];
+    np->np_rot_z       = object->g.rot[2];
     np->np_rot_torso_x = player_gfx->rot_torso[0];
     np->np_rot_torso_y = player_gfx->rot_torso[1];
     np->np_rot_torso_z = player_gfx->rot_torso[2];
@@ -641,81 +595,76 @@ static void net_player_update_self(
         (player->state_prev == 0x0C000227 && player->state == 0x00001302)
     )
     {
-        np->np_rot_head_x = g_camera_rot_head[0];
-        np->np_rot_head_y = g_camera_rot_head[1];
+        np->np_rot_head_x = camera_rot_head[0];
+        np->np_rot_head_y = camera_rot_head[1];
     }
     else
     {
         np->np_rot_head_x = 0;
         np->np_rot_head_y = 0;
     }
-    if (player_gfx->eyes == PLAYER_GFX_EYES_BLINK)
+    if (player_gfx->eye == PLAYER_EYE_BLINK)
     {
-        u32 index = (g_motion_timer >> 1) & 0x1F;
-        if (index < 7)
+        uint i = (gfx_timer >> 1) & 0x1F;
+        if (i < lenof(player_blink))
         {
-            eyes = g_player_blink_table[index];
+            eye = player_blink[i];
         }
         else
         {
-            eyes = 0;
+            eye = 0;
         }
     }
     else
     {
-        eyes = player_gfx->eyes - 1;
+        eye = player_gfx->eye - 1;
     }
     np->np_gfx_flag_h  = player_gfx->punch  <<  8 & 0xFF00;
     np->np_gfx_flag_h |= player_gfx->head   <<  6 & 0x00C0;
-    np->np_gfx_flag_h |= eyes               <<  3 & 0x0038;
-    np->np_gfx_flag_h |= player_gfx->gloves <<  0 & 0x0007;
-    np->np_gfx_flag_l &= NET_PLAYER_GFX_BODY | NET_PLAYER_GFX_NAME;
-    np->np_gfx_flag_l |= player_gfx->wings  << 15 & 0x8000;
+    np->np_gfx_flag_h |= eye                <<  3 & 0x0038;
+    np->np_gfx_flag_h |= player_gfx->glove  <<  0 & 0x0007;
+    np->np_gfx_flag_l &= NP_GFX_BODY | NP_GFX_NAME;
+    np->np_gfx_flag_l |= player_gfx->wing   << 15 & 0x8000;
     np->np_gfx_flag_l |= player_gfx->hold   << 13 & 0x6000;
     np->np_gfx_flag_l |= player_gfx->cap    <<  0 & 0x03FF;
-    np->np_motion_frame_amt = object->gfx.motion.frame_amt;
-    np->np_motion_frame_vel = object->gfx.motion.frame_vel;
-    np->np_motion_dst       = object->gfx.motion.index;
-    if
-    (
-        np->np_stage_index != g_stage_index ||
-        np->np_world_index != g_world_index
-    )
+    np->np_motion_frame_amt = object->g.motion.frame_amt;
+    np->np_motion_frame_vel = object->g.motion.frame_vel;
+    np->np_motion_dst       = object->g.motion.index;
+    if (np->np_stage != world_stage || np->np_world != world_index)
     {
         np->np_tcp_id = 0x00000001;
     }
-    np->np_stage_index = g_stage_index;
-    np->np_world_index = g_world_index;
+    np->np_stage = world_stage;
+    np->np_world = world_index;
     np->np_object = object;
     player->motion_height = np->np_motion_height;
-    object->gfx.list = &gfx_net_player;
-    object->gfx.motion.height = np->np_motion_height;
-    net_player_update_self_location(np, player);
-    net_player_update_self_character(np, player);
-    net_player_update(np, object);
+    object->g.list = &g_np;
+    object->g.motion.height = np->np_motion_height;
+    np_update_self_location(np, player);
+    np_update_self_character(np, player);
+    np_update(np, object);
 }
 
-static void net_player_update_peer(struct net_player_t *np)
+static void np_update_peer(struct np_t *np)
 {
     struct object_t *object;
     /*
     If player is not spawned, that means we currently are not in a stage. If we
     are not in a stage, our object ptr is stale, and should be cleared.
     */
-    if (g_object_p1 == NULL)
+    if (object_p1 == NULL)
     {
         np->np_object = NULL;
         return;
     }
-    net_player_update_peer_location(np);
+    np_update_peer_location(np);
     if
     (
-        np->np_stage_index != g_stage_index ||
-        np->np_world_index != g_world_index ||
+        np->np_stage != world_stage || np->np_world != world_index ||
         np->np_timer == 0
     )
     {
-        net_player_destroy(np);
+        np_destroy(np);
         return;
     }
     if (np->np_motion_dst != np->np_motion_src)
@@ -723,20 +672,20 @@ static void net_player_update_peer(struct net_player_t *np)
         uintptr_t *table;
         if (np->np_motion != NULL)
         {
-            net_motion_free(np->np_motion);
+            nm_free(np->np_motion);
             np->np_motion = NULL;
         }
         np->np_motion_src = 0xFF;
-        table = g_player_motion_table;
+        table = app_motion_player;
         if (np->np_motion_dst < table[0])
         {
             u8 *start;
             u8 *end;
             struct motion_t *motion;
             table += 2*np->np_motion_dst;
-            start  = seg_player_motion_start + table[2];
+            start  = data_motion_player_start + table[2];
             end    = start + table[3];
-            motion = net_motion_alloc(table[3]);
+            motion = nm_alloc(table[3]);
             if (motion != NULL)
             {
                 mem_dma_read(motion, start, end);
@@ -750,29 +699,27 @@ static void net_player_update_peer(struct net_player_t *np)
     object = np->np_object;
     if (object == NULL)
     {
-        object = np->np_object = object_spawn(
-            g_object_p1, 0, 0x02, obj_net_player
-        );
-        object->gfx.rot[0] = np->np_rot_x;
-        object->gfx.rot[1] = np->np_rot_y;
-        object->gfx.rot[2] = np->np_rot_z;
-        object->gfx.pos[0] = np->np_pos_x;
-        object->gfx.pos[1] = np->np_pos_y;
-        object->gfx.pos[2] = np->np_pos_z;
+        object = np->np_object = object_spawn(object_p1, 0, 2, o_np);
+        object->g.rot[0] = np->np_rot_x;
+        object->g.rot[1] = np->np_rot_y;
+        object->g.rot[2] = np->np_rot_z;
+        object->g.pos[0] = np->np_pos_x;
+        object->g.pos[1] = np->np_pos_y;
+        object->g.pos[2] = np->np_pos_z;
     }
-    net_player_intp_s16(object->gfx.rot, &np->np_rot, 3, np->np_timer_delta);
-    net_player_intp_f32(object->gfx.pos, &np->np_pos, 3, np->np_timer_delta);
-    object->gfx.scale[0] = np->np_scale_x;
-    object->gfx.scale[1] = np->np_scale_y;
-    object->gfx.scale[2] = np->np_scale_z;
-    object->gfx.motion.index  = np->np_motion_src;
-    object->gfx.motion.height = np->np_motion_height;
-    object->gfx.motion.motion = np->np_motion;
-    if (np->np_timer == NET_PLAYER_TIMEOUT)
+    np_intp_s16(object->g.rot, &np->np_rot, 3, np->np_timer_delta);
+    np_intp_f32(object->g.pos, &np->np_pos, 3, np->np_timer_delta);
+    object->g.scale[0] = np->np_scale_x;
+    object->g.scale[1] = np->np_scale_y;
+    object->g.scale[2] = np->np_scale_z;
+    object->g.motion.index  = np->np_motion_src;
+    object->g.motion.height = np->np_motion_height;
+    object->g.motion.motion = np->np_motion;
+    if (np->np_timer == NP_TIMEOUT)
     {
-        object->gfx.motion.frame     = np->np_motion_frame_amt >> 16;
-        object->gfx.motion.frame_amt = np->np_motion_frame_amt;
-        object->gfx.motion.frame_vel = np->np_motion_frame_vel;
+        object->g.motion.frame     = np->np_motion_frame_amt >> 16;
+        object->g.motion.frame_amt = np->np_motion_frame_amt;
+        object->g.motion.frame_vel = np->np_motion_frame_vel;
         np->np_timer_delta = np->np_timer - np->np_timer_prev;
     }
     else
@@ -781,43 +728,43 @@ static void net_player_update_peer(struct net_player_t *np)
     }
     if (np->np_timer < 16)
     {
-        np->np_gfx_flag_l &= 0xFC00;
-        np->np_gfx_flag_l |= PLAYER_GFX_CAP_VANISH << 8;
-        np->np_gfx_flag_l |= 16*np->np_timer - 8;
-        object->gfx.scale[0] *= 0.50F + (1.0F/32.0F)*np->np_timer;
-        object->gfx.scale[2] *= 0.50F + (1.0F/32.0F)*np->np_timer;
-        object->gfx.scale[1] *= 0.75F + 4.0F/np->np_timer;
+        np->np_gfx_flag_l  &= 0xFC00;
+        np->np_gfx_flag_l  |= PLAYER_CAP_VANISH << 8;
+        np->np_gfx_flag_l  |= 16*np->np_timer - 8;
+        object->g.scale[0] *= 0.50F + (1.0F/32)*np->np_timer;
+        object->g.scale[2] *= 0.50F + (1.0F/32)*np->np_timer;
+        object->g.scale[1] *= 0.75F + 4.0F/np->np_timer;
     }
     np->np_timer--;
-    net_player_update(np, object);
+    np_update(np, object);
 }
 
 static void net_init(void)
 {
-    u32 i;
-    bzero(net_motion_heap.page, sizeof(net_motion_heap.page));
-    g_gfx_object_table[0x02] = &gfx_net_player;
-    net_player_init_self(&net_player_table[0]);
-    for (i = 1; i < lenof(net_player_table); i++)
+    uint i;
+    bzero(nm_heap.page, sizeof(nm_heap.page));
+    world_gfx_table[2] = &g_np;
+    np_init_self(&np_table[0]);
+    for (i = 1; i < lenof(np_table); i++)
     {
-        net_player_init_peer(&net_player_table[i]);
+        np_init_peer(&np_table[i]);
     }
     net_init_character();
 }
 
 static void net_update(void)
 {
-    u32 i;
-    net_player_update_self(&net_player_table[0], g_player_p1);
-    for (i = 1; i < lenof(net_player_table); i++)
+    uint i;
+    np_update_self(&np_table[0], game_player_p1);
+    for (i = 1; i < lenof(np_table); i++)
     {
-        net_player_update_peer(&net_player_table[i]);
+        np_update_peer(&np_table[i]);
     }
 }
 
 void main(void)
 {
-    if (g_mem_segment_table[0x04] != NULL)
+    if (mem_segment_table[0x04] != NULL)
     {
         if (net_boot)
         {

@@ -1,18 +1,22 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #ifndef _TYPES_H_
 #define _TYPES_H_
 
+#define false   0
+#define true    1
+
+#ifndef __ASSEMBLER__
+
 #include <stddef.h>
 #include <stdint.h>
 
-#define false 0
-#define true  1
+typedef unsigned int uint;
 
 typedef  int8_t  s8;
 typedef uint8_t  u8;
@@ -27,7 +31,14 @@ typedef double   f64;
 
 typedef u8 bool;
 
-#define unused __attribute__((unused))
-#define lenof(x) (sizeof((x)) / sizeof((x)[0]))
+#define lenof(x)        (sizeof((x)) / sizeof((x)[0]))
+
+#ifdef __GNUC__
+#define unused          __attribute__((unused))
+#else
+#define unused
+#endif
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* _TYPES_H_ */

@@ -1,15 +1,15 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
 #include <windows.h>
 
-#include "types.h"
-#include "sm64net.h"
+#include <types.h>
+#include <sm64net.h>
 
 #include "window.h"
 #include "config.h"
@@ -64,14 +64,14 @@ static struct menu_char_t menu_char_table[] =
 static const u8 nff_header[] =
 {
     W(0x4E464600),
-    W(net_player_table),
+    W(np_table),
     W(0x00000014),
-    W(0x00000014 + sizeof(struct net_player_t)),
+    W(0x00000014 + sizeof(struct np_t)),
     W(0x00000000),
 };
 #undef W
 
-struct config_t g_config;
+struct config_t config;
 
 static void menu_a_m(char *dst, const u8 *src, ssize_t size)
 {
@@ -79,7 +79,7 @@ static void menu_a_m(char *dst, const u8 *src, ssize_t size)
     size--;
     while (*src != 0xFF && size > 0)
     {
-        unsigned int i;
+        uint i;
         for (i = 0; i < lenof(menu_char_table); i++)
         {
             if (*src == menu_char_table[i].m)
@@ -116,7 +116,7 @@ static void menu_m_a(u8 *dst, const char *src, ssize_t size)
     size--;
     while (*src != 0x00 && size > 0)
     {
-        unsigned int i;
+        uint i;
         for (i = 0; i < lenof(menu_char_table); i++)
         {
             const char *a = menu_char_table[i].a;
@@ -149,99 +149,99 @@ static void menu_m_a(u8 *dst, const char *src, ssize_t size)
 static void config_update_port(void)
 {
     char buf[0x10];
-    snprintf(buf, sizeof(buf), "%d", g_config.port);
-    SetWindowText(g_w_table[W_E_PORT].hwnd, buf);
+    snprintf(buf, sizeof(buf), "%d", config.port);
+    SetWindowText(wnd_table[W_E_PORT].hwnd, buf);
 }
 
 static void config_update_colour(void)
 {
     char buf[0x10];
-    snprintf(buf, sizeof(buf), "%06X", g_config.colour);
-    SetWindowText(g_w_table[W_E_COLOUR].hwnd, buf);
-    ShowWindow(g_w_table[W_S_COLOURPREV].hwnd, SW_HIDE);
-    ShowWindow(g_w_table[W_S_COLOURPREV].hwnd, SW_SHOWNORMAL);
+    snprintf(buf, sizeof(buf), "%06X", config.colour);
+    SetWindowText(wnd_table[W_E_COLOUR].hwnd, buf);
+    ShowWindow(wnd_table[W_S_COLOURPREV].hwnd, SW_HIDE);
+    ShowWindow(wnd_table[W_S_COLOURPREV].hwnd, SW_SHOWNORMAL);
 }
 
-bool config_read(void)
+uint config_read(void)
 {
     char buf[0x100];
     FILE *f;
-    bool new;
-    ZeroMemory(&g_config, sizeof(g_config));
+    uint new;
+    ZeroMemory(&config, sizeof(config));
     f = fopen("config.bin", "rb");
     if (f == NULL)
     {
-        strncpy(g_config.proc, "Project64.exe", sizeof(g_config.proc));
-        g_config.port = NET_PORT;
-        memset(g_config.name, 0xFF, sizeof(g_config.name));
-        g_config.colour = 0xFFFFFF;
+        strncpy(config.proc, "Project64.exe", sizeof(config.proc));
+        config.port = NET_PORT;
+        memset(config.name, 0xFF, sizeof(config.name));
+        config.colour = 0xFFFFFF;
         new = true;
     }
     else
     {
-        fread(&g_config, 1, sizeof(g_config), f);
+        fread(&config, 1, sizeof(config), f);
         fclose(f);
         new = false;
     }
-    SetWindowText(g_w_table[W_E_PROC].hwnd, g_config.proc);
-    SetWindowText(g_w_table[W_E_ADDR].hwnd, g_config.addr);
+    SetWindowText(wnd_table[W_E_PROC].hwnd, config.proc);
+    SetWindowText(wnd_table[W_E_ADDR].hwnd, config.addr);
     config_update_port();
-    g_config.name[lenof(g_config.name)-1] = 0xFF;
-    menu_a_m(buf, g_config.name, sizeof(buf));
-    SetWindowText(g_w_table[W_E_NAME].hwnd, buf);
+    config.name[lenof(config.name)-1] = 0xFF;
+    menu_a_m(buf, config.name, sizeof(buf));
+    SetWindowText(wnd_table[W_E_NAME].hwnd, buf);
     config_update_colour();
     return new;
 }
 
-bool config_write(void)
+uint config_write(void)
 {
     FILE *f;
     long int port;
     char edit_port[6];
     char edit_name[0xF9];
     GetWindowText(
-        g_w_table[W_E_PROC].hwnd, g_config.proc, sizeof(g_config.proc)
+        wnd_table[W_E_PROC].hwnd, config.proc, sizeof(config.proc)
     );
     GetWindowText(
-        g_w_table[W_E_ADDR].hwnd, g_config.addr, sizeof(g_config.addr)
+        wnd_table[W_E_ADDR].hwnd, config.addr, sizeof(config.addr)
     );
-    GetWindowText(g_w_table[W_E_PORT].hwnd, edit_port, sizeof(edit_port));
-    GetWindowText(g_w_table[W_E_NAME].hwnd, edit_name, sizeof(edit_name));
+    GetWindowText(wnd_table[W_E_PORT].hwnd, edit_port, sizeof(edit_port));
+    GetWindowText(wnd_table[W_E_NAME].hwnd, edit_name, sizeof(edit_name));
     port = strtol(edit_port, NULL, 10);
     if (port > 0 && port < 0x10000)
     {
-        g_config.port = port;
+        config.port = port;
     }
     else
     {
         if (strlen(edit_port) == 0)
         {
-            g_config.port = 0;
+            config.port = 0;
         }
         config_update_port();
     }
     config_update_colour();
-    menu_m_a(g_config.name, edit_name, sizeof(g_config.name));
+    menu_m_a(config.name, edit_name, sizeof(config.name));
     f = fopen("config.bin", "wb");
     if (f == NULL)
     {
         return true;
     }
-    fwrite(&g_config, 1, sizeof(g_config), f);
+    fwrite(&config, 1, sizeof(config), f);
     fclose(f);
     return false;
 }
 
-bool config_write_nff(void)
+uint config_write_nff(void)
 {
-    struct net_player_t np;
+    struct np_t np;
     FILE *f;
     memset(&np, 0x00, sizeof(np));
-    memcpy(&np.np_name, g_config.name, sizeof(g_config.name));
-    np.np_colour_0 = g_config.colour >> 16;
-    np.np_colour_1 = g_config.colour >>  8;
-    np.np_colour_2 = g_config.colour >>  0;
-    np.np_colour_3 = 0xFF;
+    memcpy(&np.np_name, config.name, sizeof(config.name));
+    np.np_colour_b[0] = config.colour >> 16;
+    np.np_colour_b[1] = config.colour >>  8;
+    np.np_colour_b[2] = config.colour >>  0;
+    np.np_colour_b[3] = 0xFF;
     f = fopen("config.nff", "wb");
     if (f == NULL)
     {

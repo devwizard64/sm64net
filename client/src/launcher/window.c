@@ -1,8 +1,8 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
@@ -11,7 +11,7 @@
 
 #include <commctrl.h>
 
-#include "types.h"
+#include <types.h>
 
 #include "window.h"
 #include "config.h"
@@ -21,7 +21,7 @@
     NULL, class, name, WS_VISIBLE | WS_CHILD | (style),                        \
     w##_X, w##_Y, w##_W, w##_H                                                 \
 }
-struct wnd_t g_w_table[] =
+struct wnd_t wnd_table[] =
 {
     wnd(W_S_PROC, WC_STATIC, "Emulator Name:", 0),
     wnd(W_S_ADDR, WC_STATIC, "IP Address:", 0),
@@ -55,7 +55,7 @@ static void window_error(HWND hwnd, const char *msg)
     MessageBox(hwnd, msg, "Error", MB_ICONERROR | MB_OK);
 }
 
-static void window_config_write(HWND hwnd, bool nff)
+static void window_config_write(HWND hwnd, uint nff)
 {
     if (config_write() || (nff && config_write_nff()))
     {
@@ -123,14 +123,14 @@ static void window_colour(HWND hwnd)
     cc.hwndOwner = hwnd;
     cc.lpCustColors = (LPDWORD)window_palette;
     cc.rgbResult = RGB(
-        g_config.colour >> 16 & 0xFF,
-        g_config.colour >>  8 & 0xFF,
-        g_config.colour >>  0 & 0xFF
+        config.colour >> 16 & 0xFF,
+        config.colour >>  8 & 0xFF,
+        config.colour >>  0 & 0xFF
     );
     cc.Flags = CC_FULLOPEN | CC_RGBINIT;
     if (ChooseColor(&cc))
     {
-        g_config.colour =
+        config.colour =
             GetRValue(cc.rgbResult) << 16 |
             GetGValue(cc.rgbResult) <<  8 |
             GetBValue(cc.rgbResult) <<  0;
@@ -152,10 +152,10 @@ static void window_about(HWND hwnd)
     MessageBox(
         hwnd,
         "SM64Net " _VERSION "\n"
-        "Copyright (C) 2019, 2020  devwizard\n"
+        "Copyright (C) 2019 - 2021  devwizard\n"
         "\n"
-        "This project is licensed under the GNU General Public License version "
-        "2.  See LICENSE for more information.\n"
+        "This project is licensed under the terms of the GNU General Public "
+        "License version 2.  See LICENSE for more information.\n"
         "\n"
         "See README.md for more information on how to use SM64Net.",
         "About SM64Net", MB_ICONINFORMATION | MB_OK
@@ -167,30 +167,30 @@ static void window_launch(HWND hwnd)
     char args[0x8000];
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
-    BOOL success;
-    if (g_config.proc[0] == 0x00)
+    uint success;
+    if (config.proc[0] == 0x00)
     {
         window_error(hwnd, "The 'Emulator Name' field cannot be blank.");
         return;
     }
-    if (g_config.addr[0] == 0x00)
+    if (config.addr[0] == 0x00)
     {
         window_error(hwnd, "The 'IP Address' field cannot be blank.");
         return;
     }
-    if (g_config.port == 0)
+    if (config.port == 0)
     {
         window_error(hwnd, "The value in the 'Port' field is invalid.");
         return;
     }
-    if (g_config.name[0] == 0xFF)
+    if (config.name[0] == 0xFF)
     {
         window_error(hwnd, "The 'Username' field cannot be blank.");
         return;
     }
     snprintf(
         args, sizeof(args), "sm64net.exe %s %s %d config.nff",
-        g_config.proc, g_config.addr, g_config.port
+        config.proc, config.addr, config.port
     );
     ZeroMemory(&pi, sizeof(pi));
     ZeroMemory(&si, sizeof(si));
@@ -224,9 +224,9 @@ static void window_init(HWND hwnd)
     SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0);
     hfont = CreateFontIndirect(&ncm.lfMessageFont);
     SendMessage(hwnd, WM_SETFONT, (WPARAM)hfont, MAKELPARAM(TRUE, 0));
-    for (i = 0; i < lenof(g_w_table); i++)
+    for (i = 0; i < lenof(wnd_table); i++)
     {
-        struct wnd_t *w = &g_w_table[i];
+        struct wnd_t *w = &wnd_table[i];
         w->hwnd = CreateWindowEx(
             0, w->class, w->name, w->style,
             w->x, w->y, w->w, w->h,
@@ -243,13 +243,13 @@ static void window_init(HWND hwnd)
     }
     window_update = false;
     SendMessage(
-        g_w_table[W_E_PROC].hwnd, EM_SETLIMITTEXT, lenof(g_config.proc)-1, 0
+        wnd_table[W_E_PROC].hwnd, EM_SETLIMITTEXT, lenof(config.proc)-1, 0
     );
     SendMessage(
-        g_w_table[W_E_ADDR].hwnd, EM_SETLIMITTEXT, lenof(g_config.addr)-1, 0
+        wnd_table[W_E_ADDR].hwnd, EM_SETLIMITTEXT, lenof(config.addr)-1, 0
     );
-    SendMessage(g_w_table[W_E_PORT].hwnd, EM_SETLIMITTEXT, 5, 0);
-    SendMessage(g_w_table[W_E_NAME].hwnd, EM_SETLIMITTEXT, 0xF8, 0);
+    SendMessage(wnd_table[W_E_PORT].hwnd, EM_SETLIMITTEXT, 5, 0);
+    SendMessage(wnd_table[W_E_NAME].hwnd, EM_SETLIMITTEXT, 0xF8, 0);
     window_update = true;
 }
 
@@ -270,9 +270,9 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         case WM_COMMAND:
         {
             unsigned int i;
-            for (i = 0; i < lenof(g_w_table); i++)
+            for (i = 0; i < lenof(wnd_table); i++)
             {
-                if ((HWND)lparam == g_w_table[i].hwnd)
+                if ((HWND)lparam == wnd_table[i].hwnd)
                 {
                     break;
                 }
@@ -313,20 +313,20 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
         case WM_CTLCOLORSTATIC:
         {
-            if ((HWND)lparam == g_w_table[W_E_COLOUR].hwnd)
+            if ((HWND)lparam == wnd_table[W_E_COLOUR].hwnd)
             {
                 return (LRESULT)GetSysColorBrush(COLOR_WINDOW);
             }
-            else if ((HWND)lparam == g_w_table[W_S_COLOURPREV].hwnd)
+            else if ((HWND)lparam == wnd_table[W_S_COLOURPREV].hwnd)
             {
                 if (window_brush != NULL)
                 {
                     DeleteObject(window_brush);
                 }
                 window_brush = CreateSolidBrush(RGB(
-                    g_config.colour >> 16 & 0xFF,
-                    g_config.colour >>  8 & 0xFF,
-                    g_config.colour >>  0 & 0xFF
+                    config.colour >> 16 & 0xFF,
+                    config.colour >>  8 & 0xFF,
+                    config.colour >>  0 & 0xFF
                 ));
                 return (LRESULT)window_brush;
             }

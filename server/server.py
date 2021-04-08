@@ -1,7 +1,7 @@
 #                   SM64Net - An Internet framework for SM64
-#                    Copyright (C) 2019, 2020  devwizard
-#       This project is licensed under the GNU General Public License
-#       version 2.  See LICENSE for more information.
+#                     Copyright (C) 2019 - 2021  devwizard
+#         This project is licensed under the terms of the GNU General
+#         Public License version 2.  See LICENSE for more information.
 
 import os
 import struct
@@ -11,10 +11,10 @@ import importlib
 
 import sm64net
 
-plugin = None
-s_tcp  = None
-s_udp  = None
-net_player_table = None
+plugin   = None
+s_tcp    = None
+s_udp    = None
+np_table = None
 
 def recvall(self, length):
     msg = b""
@@ -33,7 +33,7 @@ def init(fn):
     global plugin
     global s_tcp
     global s_udp
-    global net_player_table
+    global np_table
     plugin = importlib.import_module("plugin." + fn)
     s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s_tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -42,7 +42,7 @@ def init(fn):
     s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s_udp.bind(("", sm64net.NET_PORT))
-    net_player_table = sm64net.NET_PLAYER_LEN*[None]
+    np_table = sm64net.NP_LEN*[None]
     plugin.init()
 
 def destroy():
@@ -59,16 +59,16 @@ def update_connect(sock, addr):
         if a == addr:
             if msg != "":
                 data = struct.pack(">I", 0xFFFFFFFF) + msg.encode("utf-8")
-                data = data[:sm64net.NET_PLAYER_TCP_SIZE]
-                data += B"\x00" * (sm64net.NET_PLAYER_TCP_SIZE-len(data))
+                data = data[:sm64net.NP_TCP_SIZE]
+                data += B"\x00" * (sm64net.NP_TCP_SIZE-len(data))
                 sock.sendall(data)
             sock.close()
             break
     else:
-        for i, np in enumerate(net_player_table):
+        for i, np in enumerate(np_table):
             if np == None or np.s_addr == addr:
-                np = sm64net.net_player_t(sock, s_udp, addr)
-                net_player_table[i] = np
+                np = sm64net.np_t(sock, s_udp, addr)
+                np_table[i] = np
                 np.update_connect()
                 plugin.np_update_connect(np)
                 break
@@ -87,7 +87,7 @@ def update_tcp(np, data):
 
 def update():
     sockets = [
-        np.s_tcp for np in net_player_table if np != None
+        np.s_tcp for np in np_table if np != None
     ] + [s_tcp, s_udp]
     rd, wr, er = select.select(sockets, [], [], 0)
     for s in rd:
@@ -95,22 +95,22 @@ def update():
             sock, addr = s.accept()
             update_connect(sock, addr[0])
         elif s == s_udp:
-            data, addr = s.recvfrom(sm64net.NET_PLAYER_UDP_SIZE)
+            data, addr = s.recvfrom(sm64net.NP_UDP_SIZE)
             addr = addr[0]
-            for np in net_player_table:
+            for np in np_table:
                 if np != None and np.s_addr == addr:
                     update_udp(np, data)
                     break
         else:
-            data = recvall(s, sm64net.NET_PLAYER_TCP_SIZE)
+            data = recvall(s, sm64net.NP_TCP_SIZE)
             i = sockets.index(s)
-            np = net_player_table[i]
+            np = np_table[i]
             if np != None:
                 if data != None:
                     update_tcp(np, data)
                 else:
                     plugin.np_update_disconnect(np)
-                    net_player_table[i] = None
-    for np in net_player_table:
+                    np_table[i] = None
+    for np in np_table:
         plugin.np_update(np)
     plugin.update()

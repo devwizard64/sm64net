@@ -1,7 +1,7 @@
 #                   SM64Net - An Internet framework for SM64
-#                    Copyright (C) 2019, 2020  devwizard
-#       This project is licensed under the GNU General Public License
-#       version 2.  See LICENSE for more information.
+#                     Copyright (C) 2019 - 2021  devwizard
+#         This project is licensed under the terms of the GNU General
+#         Public License version 2.  See LICENSE for more information.
 
 import curses
 
@@ -29,7 +29,7 @@ def update():
     y += 2
     stdscr.addstr(y, 0, "Clients:" + 72*" ", curses.A_REVERSE)
     y += 1
-    l = len(server.net_player_table)
+    l = len(server.np_table)
     h = l//2
     for i in range(h):
         y = 3 + (i%h)
@@ -38,7 +38,7 @@ def update():
         for x in range(2):
             ln = ""
             n = h*x+i
-            np = server.net_player_table[n]
+            np = server.np_table[n]
             if np != None:
                 ln += " %02d %s" % (n, np.name if np.name != None else "<null>")
             if len(ln) > 38:

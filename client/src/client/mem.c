@@ -1,8 +1,8 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
@@ -14,7 +14,7 @@
 #include <tlhelp32.h>
 #endif
 
-#include "types.h"
+#include <types.h>
 
 #include "assert.h"
 
@@ -46,7 +46,7 @@ static void mem_byteswap(void *dst, const void *src, size_t size)
     while (size > 0);
 }
 
-bool mem_read(u32 addr, void *dst, size_t size)
+uint mem_read(u32 addr, void *dst, size_t size)
 {
     void *data;
 #ifdef WIN32
@@ -81,7 +81,7 @@ bool mem_read(u32 addr, void *dst, size_t size)
     return false;
 }
 
-bool mem_write(u32 addr, const void *src, size_t size)
+uint mem_write(u32 addr, const void *src, size_t size)
 {
     void *data;
 #ifdef WIN32
@@ -117,7 +117,7 @@ bool mem_write(u32 addr, const void *src, size_t size)
     return false;
 }
 
-static bool str_sub(const char *a, const char *b)
+static uint str_sub(const char *a, const char *b)
 {
     while (strlen(a) >= strlen(b))
     {
@@ -130,7 +130,7 @@ static bool str_sub(const char *a, const char *b)
     return false;
 }
 
-static bool mem_init_pid(const char *proc)
+static uint mem_init_pid(const char *proc)
 {
 #ifdef WIN32
     HANDLE snapshot;
@@ -184,9 +184,9 @@ static bool mem_init_pid(const char *proc)
     return true;
 }
 
-static bool mem_init_addr(void)
+static uint mem_init_addr(void)
 {
-    u32 i;
+    uint i;
     for (i = 0; i < 0x10000; i++)
     {
         u8 buf[0x200];
@@ -207,7 +207,7 @@ static bool mem_init_addr(void)
     return true;
 }
 
-bool mem_init(const char *proc)
+uint mem_init(const char *proc)
 {
     return mem_init_pid(proc) || mem_init_addr();
 }

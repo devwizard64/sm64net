@@ -5,25 +5,14 @@
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
-#ifndef _CONFIG_H_
-#define _CONFIG_H_
-
-#include <types.h>
-#include <sm64net.h>
-
-struct config_t
-{
-    /* 0x0000 */    char proc[0x400+1];
-    /* 0x0401 */    char addr[0x400+1];
-    /* 0x0802 */    u16  port;
-    /* 0x0804 */    u32  colour;
-    /* 0x0808 */    u8   name[NP_NAME_LEN];
-};  /* 0x0828 */
-
-extern struct config_t config;
-
-extern uint config_read(void);
-extern uint config_write(void);
-extern uint config_write_nff(void);
-
-#endif /* _CONFIG_H_ */
+.globl mem_init_usb
+mem_init_usb:
+    addiu   $sp, $sp, -0x0020
+    sw      $ra, 0x001C($sp)
+    la      $a0, code_usb_start
+    la      $a1, usb_start
+    la      $a2, usb_end
+    jal     mem_dma_read
+    lw      $ra, 0x001C($sp)
+    addiu   $sp, $sp, 0x0020
+    j       usb_init

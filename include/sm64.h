@@ -1,14 +1,22 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #ifndef _SM64_H_
 #define _SM64_H_
 
-#include "types.h"
+#include <types.h>
+
+#define OS_MESG_NOBLOCK         0x00
+#define OS_MESG_BLOCK           0x01
+
+#define OS_READ                 0x00
+#define OS_WRITE                0x01
+#define OS_MESG_PRI_NORMAL      0x00
+#define OS_MESG_PRI_HIGH        0x01
 
 #define A_BUTTON        0x8000
 #define B_BUTTON        0x4000
@@ -25,42 +33,57 @@
 #define L_CBUTTONS      0x0002
 #define R_CBUTTONS      0x0001
 
-#define GFX_TYPE_GFX            0x000A
-#define GFX_TYPE_DL_BILLBOARD   0x001A
-#define GFX_TYPE_DL_SCALE       0x001C
-#define GFX_TYPE_CALLBACK       0x012A
+#define G_T_GFX         0x000A
+#define G_T_BILLBOARD   0x001A
+#define G_T_SCALE       0x001C
+#define G_T_CALLBACK    0x012A
 
-#define GFX_FLAG_ENABLED        0x0001
+#define G_F_ENABLED     0x0001
 
-#define GFX_RM_BG               0x00
-#define GFX_RM_OPA_SURF         0x01
-#define GFX_RM_OPA_DECAL        0x02
-#define GFX_RM_OPA_INTER        0x03
-#define GFX_RM_SPRITE           0x04
-#define GFX_RM_XLU_SURF         0x05
-#define GFX_RM_XLU_DECAL        0x06
-#define GFX_RM_XLU_INTER        0x07
+#define G_R_BACKGROUND  0x00
+#define G_R_OPA_SURF    0x01
+#define G_R_OPA_DECAL   0x02
+#define G_R_OPA_INTER   0x03
+#define G_R_SPRITE      0x04
+#define G_R_XLU_SURF    0x05
+#define G_R_XLU_DECAL   0x06
+#define G_R_XLU_INTER   0x07
+
+#ifndef __ASSEMBLER__
 
 enum
 {
-    /* 0x00 */  PLAYER_GFX_EYES_BLINK,
-    /* 0x01 */  PLAYER_GFX_EYES_OPEN,
-    /* 0x02 */  PLAYER_GFX_EYES_HALF,
-    /* 0x03 */  PLAYER_GFX_EYES_CLOSED,
-    /* 0x04 */  PLAYER_GFX_EYES_LEFT,
-    /* 0x05 */  PLAYER_GFX_EYES_RIGHT,
-    /* 0x06 */  PLAYER_GFX_EYES_UP,
-    /* 0x07 */  PLAYER_GFX_EYES_DOWN,
-    /* 0x08 */  PLAYER_GFX_EYES_DEAD,
+    /* 0x00 */  PLAYER_EYE_BLINK,
+    /* 0x01 */  PLAYER_EYE_OPEN,
+    /* 0x02 */  PLAYER_EYE_HALF,
+    /* 0x03 */  PLAYER_EYE_CLOSED,
+    /* 0x04 */  PLAYER_EYE_LEFT,
+    /* 0x05 */  PLAYER_EYE_RIGHT,
+    /* 0x06 */  PLAYER_EYE_UP,
+    /* 0x07 */  PLAYER_EYE_DOWN,
+    /* 0x08 */  PLAYER_EYE_DEAD,
 };
 
 enum
 {
-    /* 0x00 */  PLAYER_GFX_CAP_NONE,
-    /* 0x01 */  PLAYER_GFX_CAP_VANISH,
-    /* 0x02 */  PLAYER_GFX_CAP_METAL,
-    /* 0x03 */  PLAYER_GFX_CAP_VANISH_METAL,
+    /* 0x00 */  PLAYER_CAP_NONE,
+    /* 0x01 */  PLAYER_CAP_VANISH,
+    /* 0x02 */  PLAYER_CAP_METAL,
+    /* 0x03 */  PLAYER_CAP_VANISH_METAL,
 };
+
+typedef void *OSMesg;
+typedef struct
+{
+    void *_[5];
+}
+OSMesgQueue;
+
+typedef struct
+{
+    void *_[6];
+}
+OSIoMesg;
 
 typedef union
 {
@@ -105,49 +128,49 @@ struct motion_t
     /* 0x02 */  s16     height;
     /* 0x04 */  s16     start;
     /* 0x06 */  s16     end;
-    /* 0x08 */  s16     frames;
-    /* 0x0A */  s16     joints;
+    /* 0x08 */  s16     frame;
+    /* 0x0A */  s16     joint;
     /* 0x0C */  s16    *val;
     /* 0x10 */  u16    *tbl;
     /* 0x14 */  size_t  size;
 };  /* 0x18 */
 
-struct gfx_t
+struct g_t
 {
     /* 0x00 */  s16     type;
     /* 0x02 */  s16     flag;
-    /* 0x04 */  struct gfx_t *prev;
-    /* 0x08 */  struct gfx_t *next;
-    /* 0x0C */  struct gfx_t *parent;
-    /* 0x10 */  struct gfx_t *child;
+    /* 0x04 */  struct g_t *prev;
+    /* 0x08 */  struct g_t *next;
+    /* 0x0C */  struct g_t *parent;
+    /* 0x10 */  struct g_t *child;
 };  /* 0x14 */
 
-struct gfx_callback_t
+struct gc_t
 {
-    /* 0x00 */  struct gfx_t gfx;
-    /* 0x14 */  Gfx  *(*callback)(s32, struct gfx_callback_t *, f32[4][4]);
-    /* 0x18 */  s32     arg;
+    /* 0x00 */  struct g_t g;
+    /* 0x14 */  void *(*callback)(int, struct g_t *, void *);
+    /* 0x18 */  int     arg;
 };  /* 0x1C */
 
-struct gfx_dl_t
+struct gg_t
 {
-    /* 0x00 */  struct gfx_t gfx;
-    /* 0x14 */  Gfx    *dl;
+    /* 0x00 */  struct g_t g;
+    /* 0x14 */  Gfx    *gfx;
 };  /* 0x18 */
 
-struct gfx_dl_billboard_t
+struct g_billboard_t
 {
-    /* 0x00 */  struct gfx_dl_t gfx;
+    /* 0x00 */  struct gg_t g;
     /* 0x18 */  s16     pos[3];
 };  /* 0x1E */
 
-struct gfx_dl_scale_t
+struct g_scale_t
 {
-    /* 0x00 */  struct gfx_dl_t gfx;
+    /* 0x00 */  struct gg_t g;
     /* 0x18 */  f32     scale;
 };  /* 0x1C */
 
-struct gfx_object_motion_t
+struct go_motion_t
 {
     /* 0x00 0x38 */ s16     index;
     /* 0x02 0x3A */ s16     height;
@@ -158,24 +181,24 @@ struct gfx_object_motion_t
     /* 0x10 0x48 */ s32     frame_vel;
 };  /* 0x14 0x4C */
 
-struct gfx_object_t
+struct go_t
 {
-    /* 0x00 */  struct gfx_t gfx;
-    /* 0x14 */  struct gfx_t *list;
+    /* 0x00 */  struct g_t g;
+    /* 0x14 */  struct g_t *list;
     /* 0x18 */  s8      world_index;
     /* 0x19 */  s8      gfx_index;
     /* 0x1A */  s16     rot[3];
     /* 0x20 */  f32     pos[3];
     /* 0x2C */  f32     scale[3];
-    /* 0x38 */  struct gfx_object_motion_t motion;
+    /* 0x38 */  struct go_motion_t motion;
     /* 0x4C */  void   *_4C;
     /* 0x50 */  f32   (*mtxf)[4][4];
     /* 0x54 */  f32     pos_sfx[3];
 };  /* 0x60 */
 
-struct gfx_camera_t
+struct g_camera_t
 {
-    /* 0x00 */  struct gfx_callback_t gfx;
+    /* 0x00 */  struct gc_t g;
     /* 0x1C */  f32     pos[3];
     /* 0x28 */  f32     obj[3];
     /* 0x34 */  f32   (*mtxf)[4][4];
@@ -185,7 +208,7 @@ struct gfx_camera_t
 
 struct object_t
 {
-    /* 0x0000 */    struct gfx_object_t gfx;
+    /* 0x0000 */    struct go_t g;
     /* 0x0060 */    struct object_t *next;
     /* 0x0064 */    struct object_t *prev;
     /* 0x0068 */    struct object_t *parent;
@@ -196,15 +219,15 @@ struct object_t
     /* 0x0078 */    struct object_t *object_touch[4];
     /* 0x0088 */    union
                     {
-                        s8      s8[320/sizeof(s8)];
-                        u8      u8[320/sizeof(u8)];
-                        s16     s16[320/sizeof(s16)];
-                        u16     u16[320/sizeof(u16)];
-                        s32     s32[320/sizeof(s32)];
-                        u32     u32[320/sizeof(u32)];
-                        void   *ptr[320/sizeof(void *)];
+                        s8      s8[4];
+                        u8      u8[4];
+                        s16     s16[2];
+                        u16     u16[2];
+                        s32     s32;
+                        u32     u32;
+                        void   *ptr;
                     }
-                    mem;
+                    mem[80];
     /* 0x01C8 */    void   *_1C8;
     /* 0x01CC */    uintptr_t *pc;
     /* 0x01D0 */    uintptr_t stack_index;
@@ -228,9 +251,9 @@ struct player_gfx_t
 {
     /* 0x00 */  u32     state;
     /* 0x04 */  s8      head;
-    /* 0x05 */  s8      eyes;
-    /* 0x06 */  s8      gloves;
-    /* 0x07 */  s8      wings;
+    /* 0x05 */  s8      eye;
+    /* 0x06 */  s8      glove;
+    /* 0x07 */  s8      wing;
     /* 0x08 */  s16     cap;
     /* 0x0A */  s8      hold;
     /* 0x0B */  u8      punch;
@@ -254,11 +277,11 @@ struct player_t
     /* 0x1C */  u32     state_arg;
     /* 0x20 */  f32     stick_mag;
     /* 0x24 */  s16     stick_rot;
-    /* 0x26 */  s16     timer_invincible;
-    /* 0x28 */  u8      timer_a_down;
-    /* 0x29 */  u8      timer_b_down;
-    /* 0x2A */  u8      timer_col_wall;
-    /* 0x2B */  u8      timer_col_floor;
+    /* 0x26 */  s16     invincible;
+    /* 0x28 */  u8      timer_a;
+    /* 0x29 */  u8      timer_b;
+    /* 0x2A */  u8      timer_wall;
+    /* 0x2B */  u8      timer_floor;
     /* 0x2C */  s16     rot[3];
     /* 0x32 */  s16     rot_vel[3];
     /* 0x38 */  s16     rot_slide;
@@ -286,18 +309,18 @@ struct player_t
     /* 0x9C */  struct pad_t *pad;
     /* 0xA0 */  struct motion_t *motion;
     /* 0xA4 */  u32     touch;
-    /* 0xA8 */  s16     coins;
-    /* 0xAA */  s16     stars;
-    /* 0xAC */  s8      keys;
-    /* 0xAD */  s8      lives;
-    /* 0xAE */  s16     health;
+    /* 0xA8 */  s16     coin;
+    /* 0xAA */  s16     star;
+    /* 0xAC */  s8      key;
+    /* 0xAD */  s8      life;
+    /* 0xAE */  s16     power;
     /* 0xB0 */  s16     motion_height;
-    /* 0xB2 */  u8      timer_power_dec;
-    /* 0xB3 */  u8      timer_power_inc;
+    /* 0xB2 */  u8      timer_hurt;
+    /* 0xB3 */  u8      timer_heal;
     /* 0xB4 */  u8      timer_squish;
     /* 0xB5 */  u8      timer_dither;
     /* 0xB6 */  u16     timer_cap;
-    /* 0xB8 */  s16     stars_prev;
+    /* 0xB8 */  s16     star_prev;
     /* 0xBC */  f32     height_peak;
     /* 0xC0 */  f32     height_sink;
     /* 0xC4 */  f32     gravity;
@@ -313,33 +336,41 @@ struct player_t
     u8 gfx,
     const uintptr_t *script
 );
-/* 0x802D62D8 */ extern void hud_print_int(
-    s16 x, s16 y, const char *str, s32 i
+/* 0x802D62D8 */ extern void print_int(
+    s16 x, s16 y, const char *str, int i
 );
-/* 0x802D6554 */ extern void hud_print(s16 x, s16 y, const char *str);
-/* 0x802D77DC */ extern void menu_print(s16 x, s16 y, const u8 *str);
+/* 0x802D6554 */ extern void print(s16 x, s16 y, const char *str);
+/* 0x802D77DC */ extern void message_print(s16 x, s16 y, const u8 *str);
+/* 0x803225A0 */ extern void osCreateMesgQueue(OSMesgQueue *, OSMesg *, s32);
+/* 0x80322800 */ extern s32 osRecvMesg(OSMesgQueue *, OSMesg *, s32);
+/* 0x803243B0 */ extern void osInvalDCache(void *, s32);
+/* 0x80324460 */ extern s32 osPiStartDma(
+    OSIoMesg *, s32, s32, u32, void *, u32, OSMesgQueue *
+);
 /* 0x80324570 */ extern void bzero(void *, s32);
 /* 0x80324610 */ extern void osInvalICache(void *, s32);
 /* 0x80325D20 */ extern void osWritebackDCache(void *, s32);
 /* 0x803273F0 */ extern void *memcpy(void *, const void *, size_t);
-/* 0x8032D93C */ extern struct player_t *g_player_p1;
-/* 0x8032DD50 */ extern u8 g_player_blink_table[8];
-/* 0x8032DDC4 */ extern struct gfx_t **g_gfx_object_table;
-/* 0x8032DDF8 */ extern s16 g_stage_index;
-/* 0x8032DEFC */ extern struct gfx_camera_t *g_gfx_camera;
-/* 0x8032DF00 */ extern struct gfx_object_t *g_gfx_object;
-/* 0x8032DF08 */ extern u16 g_motion_timer;
-/* 0x80331370 */ extern const u8 g_menu_kern[0x100];
-/* 0x8033B06C */ extern Gfx *g_dl;
-/* 0x8033B080 */ extern uintptr_t *g_player_motion_table;
-/* 0x8033B3B0 */ extern struct player_gfx_t g_player_gfx_table[2];
-/* 0x8033B400 */ extern void *g_mem_segment_table[0x20];
-/* 0x8033BACA */ extern u16 g_world_index;
-/* 0x8033C536 */ extern s16 g_camera_rot_head[2];
-/* 0x80361158 */ extern struct object_t *g_object_p1;
-/* 0x8037E0B4 */ extern struct gfx_t *gfx_script_compile(
+/* 0x8032D93C */ extern struct player_t *game_player_p1;
+/* 0x8032DD50 */ extern u8 player_blink[8];
+/* 0x8032DDC4 */ extern struct g_t **world_gfx_table;
+/* 0x8032DDF8 */ extern s16 world_stage;
+/* 0x8032DEFC */ extern struct g_camera_t *gfx_camera;
+/* 0x8032DF00 */ extern struct g_object_t *gfx_object;
+/* 0x8032DF08 */ extern u16 gfx_timer;
+/* 0x80331370 */ extern const u8 message_kern[0x100];
+/* 0x8033B06C */ extern Gfx *app_gfx;
+/* 0x8033B080 */ extern uintptr_t *app_motion_player;
+/* 0x8033B3B0 */ extern struct player_gfx_t player_gfx_table[2];
+/* 0x8033B400 */ extern void *mem_segment_table[0x20];
+/* 0x8033BACA */ extern u16 world_index;
+/* 0x8033C536 */ extern s16 camera_rot_head[2];
+/* 0x80361158 */ extern struct object_t *object_p1;
+/* 0x8037E0B4 */ extern struct g_t *script_g_main(
     struct heap_t *heap, const uintptr_t *script
 );
-/* 0x004EC000 */ extern u8 seg_player_motion_start[];
+/* 0x004EC000 */ extern u8 data_motion_player_start[];
+
+#endif /* __ASSEMBLER__ */
 
 #endif /* _SM64_H_ */

@@ -1,8 +1,8 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
@@ -11,13 +11,13 @@
 
 #include <libftdi1/ftdi.h>
 
-#include "types.h"
+#include <types.h>
 
 #include "assert.h"
 
 static struct ftdi_context *usb_ftdi;
 
-bool mem_read(u32 addr, void *dst, size_t size)
+uint mem_read(uint addr, void *dst, size_t size)
 {
     u8 buf[0x10];
     memset(buf, 0x00, sizeof(buf));
@@ -43,7 +43,7 @@ bool mem_read(u32 addr, void *dst, size_t size)
     return false;
 }
 
-bool mem_write(u32 addr, const void *src, size_t size)
+uint mem_write(uint addr, const void *src, size_t size)
 {
     u8 buf[0x10];
     memset(buf, 0x00, sizeof(buf));
@@ -69,7 +69,7 @@ bool mem_write(u32 addr, const void *src, size_t size)
     return false;
 }
 
-bool mem_init(unused const char *proc)
+uint mem_init(unused const char *proc)
 {
     usb_ftdi = ftdi_new();
     if (usb_ftdi == NULL)

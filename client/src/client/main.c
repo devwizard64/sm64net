@@ -1,8 +1,8 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                   Copyright (C) 2019, 2020  devwizard                      *
- *      This project is licensed under the GNU General Public License         *
- *      version 2.  See LICENSE for more information.                         *
+ *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *        This project is licensed under the terms of the GNU General         *
+ *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
 #include <stdio.h>
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "types.h"
+#include <types.h>
 
 #include "assert.h"
 #include "mem.h"
@@ -23,10 +23,10 @@ int main(int argc, const char **argv)
     long int port;
     puts(
         "SM64Net Client " _VERSION "\n"
-        "Copyright (C) 2019, 2020  devwizard\n"
-        "This project is licensed under the GNU General Public License version "
-        "2.  See\n"
-        "LICENSE for more information."
+        "Copyright (C) 2019 - 2021  devwizard\n"
+        "This project is licensed under the terms of the GNU General Public "
+        "License\n"
+        "version 2.  See LICENSE for more information.\n"
     );
     if (argc < 4)
     {
