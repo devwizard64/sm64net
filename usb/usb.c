@@ -106,6 +106,11 @@ void usb_init(void)
     usb_reg_w(REG_KEY, 0xAA55);
     usb_reg_w(REG_SYS_CFG, 0);
     usb_reg_w(REG_USB_CFG, USB_CMD_RD_NOP);
+    while (usb_ready())
+    {
+        u64 data[0x10/sizeof(u64)];
+        usb_read(data, sizeof(data));
+    }
 }
 
 void usb_update(void)
@@ -120,7 +125,7 @@ void usb_update(void)
                 size_t size;
                 u8     mode;
             };
-            u32 data[0x10/sizeof(u32)];
+            u64 data[0x10/sizeof(u64)];
         }
         cmd;
         usb_read(cmd.data, sizeof(cmd.data));
@@ -130,9 +135,8 @@ void usb_update(void)
         }
         else
         {
-            usb_read(cmd.addr, cmd.size);
-            osWritebackDCache(cmd.addr, cmd.size);
             osInvalICache(cmd.addr, cmd.size);
+            usb_read(cmd.addr, cmd.size);
         }
     }
 }

@@ -9,6 +9,12 @@ CC      := cc
 CCFLAG  := -I ../include -D _VERSION=\"$(VERSION)\" -D _NATIVE 
 CCFLAG  += -Wall -Wextra -Wpedantic -O2
 
+OBJ := \
+	build/sm64net       \
+	build/sm64net_usb   \
+	build/sm64net.exe   \
+	build/SM64NetLauncher.exe
+
 CLIENT      := src/client/main.c src/client/mem.c src/client/net.c
 CLIENT_USB  := src/client/main.c src/client/mem_usb.c src/client/net.c
 LAUNCHER    := src/launcher/main.c src/launcher/window.c src/launcher/config.c
@@ -18,6 +24,7 @@ build/sm64net.exe: LIB := -l ws2_32
 build/SM64NetLauncher.exe: CC  := i686-w64-mingw32-gcc -mwindows
 build/SM64NetLauncher.exe: LIB := -l comctl32
 
+default: $(OBJ)
 build/sm64net:      $(CLIENT)
 build/sm64net_usb:  $(CLIENT_USB)
 build/sm64net.exe:  $(CLIENT)
@@ -32,6 +39,4 @@ build:
 clean:
 	@rm -rf build
 
-all: build/sm64net build/sm64net_usb build/sm64net.exe build/SM64NetLauncher.exe
-
-.PHONY: clean all
+.PHONY: default clean

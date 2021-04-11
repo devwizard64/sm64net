@@ -27,7 +27,7 @@ Check **both** boxes on the bottom, then click 'Allow access.'
 
 ### Dependencies (Server)
 * `apt install gcc-mips-linux-gnu`
-* `python3 -m pip install windows-curses`
+* `pip install windows-curses`
 
 ## Client
 

@@ -79,7 +79,7 @@ uint mem_init(unused const char *proc)
     }
     if (ftdi_usb_open(usb_ftdi, 0x0403, 0x6001) < 0)
     {
-        fprintf(stderr, "error: X7 not plugged in\n");
+        fprintf(stderr, "error: EverDrive not plugged in\n");
         ftdi_free(usb_ftdi);
         return true;
     }
