@@ -433,9 +433,9 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
 
 static void *nm_alloc(size_t size)
 {
-    u32 pages;
-    u32 page;
-    u32 i;
+    uint pages;
+    uint page;
+    uint i;
     pages = (size+sizeof(nm_heap.data[0])-1) / sizeof(nm_heap.data[0]);
     if (pages >= 0x100)
     {
@@ -463,9 +463,9 @@ static void *nm_alloc(size_t size)
 
 static void nm_free(void *ptr)
 {
-    u32 pages;
-    u32 page;
-    u32 i;
+    uint pages;
+    uint page;
+    uint i;
     page = (typeof(&nm_heap.data[0]))ptr - nm_heap.data;
     pages = nm_heap.page[page];
     for (i = 0; i < pages; i++)
@@ -474,7 +474,7 @@ static void nm_free(void *ptr)
     }
 }
 
-static void np_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
+static void np_interpolate_f32(f32 *dst, const f32 *src, uint len, uint delay)
 {
     f32 div = (delay > 0 ? delay : 1) * (3/2.0F);
     do
@@ -494,12 +494,12 @@ static void np_intp_f32(f32 *dst, const f32 *src, u32 len, u32 delay)
     while (--len > 0);
 }
 
-static void np_intp_s16(s16 *dst, const s16 *src, u32 len, u32 delay)
+static void np_interpolate_s16(s16 *dst, const s16 *src, uint len, uint delay)
 {
-    s32 div = (delay > 0 ? delay : 1) * 3/2;
+    int div = (delay > 0 ? delay : 1) * 3/2;
     do
     {
-        s32 d = *src - *dst;
+        int d = *src - *dst;
         if (d < -0x8000)
         {
             d += 0x10000;
@@ -585,7 +585,7 @@ static void np_update_self(struct np_t *np, struct player_t *player)
     np->np_rot_torso_z = player_gfx->rot_torso[2];
     /*
     This fixes a bug where if we leave first person, our head is stuck rotated
-    for everyone else's client. Of course, we allow our head to be rotated
+    for everyone else's client.  Of course, we allow our head to be rotated
     for the star dance state, for obvious reasons.
     */
     /* first person / star dance */
@@ -606,14 +606,7 @@ static void np_update_self(struct np_t *np, struct player_t *player)
     if (player_gfx->eye == PLAYER_EYE_BLINK)
     {
         uint i = (gfx_timer >> 1) & 0x1F;
-        if (i < lenof(player_blink))
-        {
-            eye = player_blink[i];
-        }
-        else
-        {
-            eye = 0;
-        }
+        eye = i < lenof(player_blink) ? player_blink[i] : 0;
     }
     else
     {
@@ -649,7 +642,7 @@ static void np_update_peer(struct np_t *np)
 {
     struct object_t *object;
     /*
-    If player is not spawned, that means we currently are not in a stage. If we
+    If player is not spawned, that means we currently are not in a stage.  If we
     are not in a stage, our object ptr is stale, and should be cleared.
     */
     if (object_p1 == NULL)
@@ -707,8 +700,8 @@ static void np_update_peer(struct np_t *np)
         object->g.pos[1] = np->np_pos_y;
         object->g.pos[2] = np->np_pos_z;
     }
-    np_intp_s16(object->g.rot, &np->np_rot, 3, np->np_timer_delta);
-    np_intp_f32(object->g.pos, &np->np_pos, 3, np->np_timer_delta);
+    np_interpolate_s16(object->g.rot, &np->np_rot, 3, np->np_timer_delta);
+    np_interpolate_f32(object->g.pos, &np->np_pos, 3, np->np_timer_delta);
     object->g.scale[0] = np->np_scale_x;
     object->g.scale[1] = np->np_scale_y;
     object->g.scale[2] = np->np_scale_z;
