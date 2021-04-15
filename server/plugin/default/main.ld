@@ -25,8 +25,8 @@ SECTIONS
     )
 #ifdef _CHARACTER
     CODE(0x80400000, net_gfx, DATA(build/gfx.ld.o),)
-    net_gfx_heap_start  = .;
-    net_gfx_heap_end    = 0x80800000;
+    net_gfx_arena_start  = .;
+    net_gfx_arena_end    = 0x80800000;
 #endif
     CODE(0x80248BE0, net_hook, TEXT(build/hook.o),)
     /DISCARD/ :

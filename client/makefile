@@ -15,20 +15,22 @@ OBJ := \
 	build/sm64net.exe   \
 	build/SM64NetLauncher.exe
 
-CLIENT      := src/client/main.c src/client/mem.c src/client/net.c
-CLIENT_USB  := src/client/main.c src/client/mem_usb.c src/client/net.c
-LAUNCHER    := src/launcher/main.c src/launcher/window.c src/launcher/config.c
-build/sm64net_usb: LIB := -l ftdi
+default: $(OBJ)
+
+SRC := src/client/main.c src/client/mem.c src/client/net.c
+build/sm64net: $(SRC)
 build/sm64net.exe: CC  := i686-w64-mingw32-gcc -mconsole
 build/sm64net.exe: LIB := -l ws2_32
+build/sm64net.exe: $(SRC)
+
+SRC := src/client/main.c src/client/mem_usb.c src/client/net.c
+build/sm64net_usb: LIB := -l ftdi
+build/sm64net_usb: $(SRC)
+
+SRC := src/launcher/main.c src/launcher/window.c src/launcher/config.c
 build/SM64NetLauncher.exe: CC  := i686-w64-mingw32-gcc -mwindows
 build/SM64NetLauncher.exe: LIB := -l comctl32
-
-default: $(OBJ)
-build/sm64net:      $(CLIENT)
-build/sm64net_usb:  $(CLIENT_USB)
-build/sm64net.exe:  $(CLIENT)
-build/SM64NetLauncher.exe: $(LAUNCHER)
+build/SM64NetLauncher.exe: $(SRC)
 
 build/%: | build
 	@$(CC) $(CCFLAG) -o $@ $^ $(LIB)

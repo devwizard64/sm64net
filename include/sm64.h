@@ -109,7 +109,7 @@ struct pad_t
     /* 0x18 */  void   *status;
 };  /* 0x1C */
 
-struct heap_t
+struct arena_t
 {
     /* 0x00 */  size_t  size;
     /* 0x04 */  size_t  used;
@@ -326,13 +326,13 @@ struct player_t
     /* 0xC4 */  f32     gravity;
 };  /* 0xC8 */
 
-/* 0x80278504 */ extern void mem_dma_read(
+/* 0x80278504 */ extern void mem_dma(
     void *dst, const void *start, const void *end
 );
-/* 0x80278F2C */ extern void *mem_alloc_gfx(size_t size);
-/* 0x8029ED20 */ extern struct object_t *object_spawn(
+/* 0x80278F2C */ extern void *gfx_alloc(size_t size);
+/* 0x8029ED20 */ extern struct object_t *object_create(
     const struct object_t *parent,
-    u32 a1,
+    u32 arg,
     u8 gfx,
     const uintptr_t *script
 );
@@ -351,23 +351,23 @@ struct player_t
 /* 0x80324610 */ extern void osInvalICache(void *, s32);
 /* 0x80325D20 */ extern void osWritebackDCache(void *, s32);
 /* 0x803273F0 */ extern void *memcpy(void *, const void *, size_t);
-/* 0x8032D93C */ extern struct player_t *game_player_p1;
+/* 0x8032D93C */ extern struct player_t *player_p1;
 /* 0x8032DD50 */ extern u8 player_blink[8];
 /* 0x8032DDC4 */ extern struct g_t **world_gfx_table;
 /* 0x8032DDF8 */ extern s16 world_stage;
 /* 0x8032DEFC */ extern struct g_camera_t *gfx_camera;
 /* 0x8032DF00 */ extern struct g_object_t *gfx_object;
-/* 0x8032DF08 */ extern u16 gfx_timer;
+/* 0x8032DF08 */ extern u16 gfx_frame;
 /* 0x80331370 */ extern const u8 message_kern[0x100];
-/* 0x8033B06C */ extern Gfx *app_gfx;
-/* 0x8033B080 */ extern uintptr_t *app_motion_player;
+/* 0x8033B06C */ extern Gfx *video_gfx;
+/* 0x8033B080 */ extern uintptr_t *ft_motion_player;
 /* 0x8033B3B0 */ extern struct player_gfx_t player_gfx_table[2];
-/* 0x8033B400 */ extern void *mem_segment_table[0x20];
+/* 0x8033B400 */ extern uintptr_t segment_table[0x20];
 /* 0x8033BACA */ extern u16 world_index;
 /* 0x8033C536 */ extern s16 camera_rot_head[2];
 /* 0x80361158 */ extern struct object_t *object_p1;
 /* 0x8037E0B4 */ extern struct g_t *script_g_main(
-    struct heap_t *heap, const uintptr_t *script
+    struct arena_t *arena, const uintptr_t *script
 );
 /* 0x004EC000 */ extern u8 data_motion_player_start[];
 

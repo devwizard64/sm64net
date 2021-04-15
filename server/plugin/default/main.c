@@ -239,8 +239,8 @@ struct character_t
 extern const uintptr_t gfx_metaknight[];
 extern const uintptr_t gfx_bandanadee[];
 
-extern u8 net_gfx_heap_start[];
-extern u8 net_gfx_heap_end[];
+extern u8 net_gfx_arena_start[];
+extern u8 net_gfx_arena_end[];
 
 static const struct character_t net_character_table[] =
 {
@@ -286,16 +286,16 @@ static void np_update_self_character(
 
 static void net_init_character(void)
 {
-    struct heap_t heap;
+    struct arena_t arena;
     uint i;
-    heap.size  = net_gfx_heap_end - net_gfx_heap_start;
-    heap.used  = 0;
-    heap.start = net_gfx_heap_start;
-    heap.free  = net_gfx_heap_start;
+    arena.size  = net_gfx_arena_end - net_gfx_arena_start;
+    arena.used  = 0;
+    arena.start = net_gfx_arena_start;
+    arena.free  = net_gfx_arena_start;
     net_gfx_table[0] = world_gfx_table[0x01];
     for (i = 1; i < lenof(net_character_table); i++)
     {
-        net_gfx_table[i] = script_g_main(&heap, net_character_table[i].script);
+        net_gfx_table[i] = script_g_main(&arena, net_character_table[i].script);
     }
 }
 #else
@@ -386,14 +386,14 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
             {
                 return NULL;
             }
-            gfx_backup = app_gfx;
+            gfx_backup = video_gfx;
             (&np->np_name)[NP_NAME_LEN-1] = 0xFF;
             w = menu_str_w(&np->np_name);
             h = menu_str_h(&np->np_name);
             message_print(-w >> 1, h, &np->np_name);
-            size = (u8 *)app_gfx - (u8 *)gfx_backup;
-            gfx = mem_alloc_gfx(sizeof(*gfx)*3 + size);
-            app_gfx = gfx_backup;
+            size = (u8 *)video_gfx - (u8 *)gfx_backup;
+            gfx = gfx_alloc(sizeof(*gfx)*3 + size);
+            video_gfx = gfx_backup;
             if (gfx != NULL)
             {
                 Gfx *dst = gfx;
@@ -605,7 +605,7 @@ static void np_update_self(struct np_t *np, struct player_t *player)
     }
     if (player_gfx->eye == PLAYER_EYE_BLINK)
     {
-        uint i = (gfx_timer >> 1) & 0x1F;
+        uint i = (gfx_frame >> 1) & 0x1F;
         eye = i < lenof(player_blink) ? player_blink[i] : 0;
     }
     else
@@ -662,26 +662,26 @@ static void np_update_peer(struct np_t *np)
     }
     if (np->np_motion_dst != np->np_motion_src)
     {
-        uintptr_t *table;
+        uintptr_t *ft;
         if (np->np_motion != NULL)
         {
             nm_free(np->np_motion);
             np->np_motion = NULL;
         }
         np->np_motion_src = 0xFF;
-        table = app_motion_player;
-        if (np->np_motion_dst < table[0])
+        ft = ft_motion_player;
+        if (np->np_motion_dst < ft[0])
         {
             u8 *start;
             u8 *end;
             struct motion_t *motion;
-            table += 2*np->np_motion_dst;
-            start  = data_motion_player_start + table[2];
-            end    = start + table[3];
-            motion = nm_alloc(table[3]);
+            ft += 2*np->np_motion_dst;
+            start  = data_motion_player_start + ft[2];
+            end    = start + ft[3];
+            motion = nm_alloc(ft[3]);
             if (motion != NULL)
             {
-                mem_dma_read(motion, start, end);
+                mem_dma(motion, start, end);
                 motion->val = (s16 *)((u8 *)motion + (uintptr_t)motion->val);
                 motion->tbl = (u16 *)((u8 *)motion + (uintptr_t)motion->tbl);
                 np->np_motion = motion;
@@ -692,7 +692,7 @@ static void np_update_peer(struct np_t *np)
     object = np->np_object;
     if (object == NULL)
     {
-        object = np->np_object = object_spawn(object_p1, 0, 2, o_np);
+        object = np->np_object = object_create(object_p1, 0, 2, o_np);
         object->g.rot[0] = np->np_rot_x;
         object->g.rot[1] = np->np_rot_y;
         object->g.rot[2] = np->np_rot_z;
@@ -748,7 +748,7 @@ static void net_init(void)
 static void net_update(void)
 {
     uint i;
-    np_update_self(&np_table[0], game_player_p1);
+    np_update_self(&np_table[0], player_p1);
     for (i = 1; i < lenof(np_table); i++)
     {
         np_update_peer(&np_table[i]);
@@ -757,7 +757,7 @@ static void net_update(void)
 
 void main(void)
 {
-    if (mem_segment_table[0x04] != NULL)
+    if (segment_table[0x04] != 0)
     {
         if (net_boot)
         {

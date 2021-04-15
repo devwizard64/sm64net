@@ -8,4 +8,4 @@ build/main.elf: build/UNSME0.o build/hook_a.o build/hook_b.o build/hook_c.o
 build/main.elf: build/usb.o
 
 FLAG    := -I ../include
-include ../include/sm64.mak
+include ../include/sm64.mk

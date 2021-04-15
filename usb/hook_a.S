@@ -12,7 +12,7 @@ mem_init_usb:
     la      $a0, code_usb_start
     la      $a1, usb_start
     la      $a2, usb_end
-    jal     mem_dma_read
+    jal     mem_dma
     lw      $ra, 0x001C($sp)
     addiu   $sp, $sp, 0x0020
     j       usb_init

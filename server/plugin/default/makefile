@@ -10,4 +10,4 @@ build/gfx.ld.o:     gfx_metaknight.o gfx_bandanadee.o
 build/script.ld.o:  script_metaknight.o script_bandanadee.o
 
 FLAG    := -I ../../../include -D _LOCATION -D _CHARACTER
-include ../../../include/sm64.mak
+include ../../../include/sm64.mk
