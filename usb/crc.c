@@ -11,9 +11,9 @@
 #include <stdint.h>
 #include <string.h>
 
+typedef unsigned int uint;
 typedef uint8_t  u8;
 typedef uint32_t u32;
-typedef unsigned int uint;
 
 int main(int argc, const char **argv)
 {

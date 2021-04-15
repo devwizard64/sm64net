@@ -212,7 +212,7 @@ static void window_init(HWND hwnd)
     RECT rect;
     NONCLIENTMETRICS ncm;
     HFONT hfont;
-    unsigned int i;
+    uint i;
     GetWindowRect(hwnd, &rect);
     SetWindowPos(
         hwnd, HWND_TOP,
@@ -269,7 +269,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         }
         case WM_COMMAND:
         {
-            unsigned int i;
+            uint i;
             for (i = 0; i < lenof(wnd_table); i++)
             {
                 if ((HWND)lparam == wnd_table[i].hwnd)
