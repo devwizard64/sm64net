@@ -226,7 +226,7 @@ uint net_init(const char *addr, long int port, const char **argv, int argc)
         struct net_meta_t meta;
         assert(recvall(net_tcp_socket, &meta, sizeof(meta)));
         meta.version[lenof(meta.version)-1] = 0;
-        if (memcmp(meta.version, str_version, lenof(str_version)) != 0)
+        if (memcmp(meta.version, str_version, sizeof(str_version)) != 0)
         {
             fprintf(stderr, "error: server is version %s\n", meta.version);
             return true;
