@@ -172,7 +172,7 @@ static uint mem_init_pid(const char *proc)
             }
             fread(cmd, 1, sizeof(cmd), f);
             fclose(f);
-            cmd[sizeof(cmd) - 1] = 0x00;
+            cmd[lenof(cmd)-1] = 0;
             if (str_sub(cmd, proc))
             {
                 return false;

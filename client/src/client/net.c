@@ -52,11 +52,14 @@ WINSOCK_API_LINKAGE int WSAAPI WSAPoll(
 #define W(i) (b[(i)+0] << 24 | b[(i)+1] << 16 | b[(i)+2] << 8 | b[(i)+3])
 #define np_u32(x) (x##_b[0] << 24 | x##_b[1] << 16 | x##_b[2] << 8 | x##_b[3])
 
+static const char str_version[] = _VERSION;
+
 static int net_tcp_socket;
 static int net_udp_socket;
 static struct sockaddr_in net_tcp_addr;
 static struct sockaddr_in net_udp_addr;
 static bool net_banned = true;
+static u32  np_table;
 
 static uint recvall(int sockfd, void *buf, size_t len)
 {
@@ -124,9 +127,13 @@ static uint nff_write(const char *fn)
         uint start = W(0x08);
         uint end   = W(0x0C);
         b += 0x0C;
-        if (addr == 0x00000000)
+        if (addr == 0)
         {
             break;
+        }
+        if (addr == (u32)-1)
+        {
+            addr = np_table;
         }
         if (mem_write(addr, data+start, end-start))
         {
@@ -215,6 +222,18 @@ uint net_init(const char *addr, long int port, const char **argv, int argc)
     );
     assert_msg(error < 0, "bind() failed");
     net_udp_addr.sin_addr.s_addr = net_tcp_addr.sin_addr.s_addr;
+    {
+        struct net_meta_t meta;
+        assert(recvall(net_tcp_socket, &meta, sizeof(meta)));
+        meta.version[lenof(meta.version)-1] = 0;
+        if (memcmp(meta.version, str_version, lenof(str_version)) != 0)
+        {
+            fprintf(stderr, "error: server is version %s\n", meta.version);
+            return true;
+        }
+        assert(mem_write(NP_TABLE, meta.np_table_b, sizeof(meta.np_table_b)));
+        np_table = np_u32(meta.np_table);
+    }
     while (argc > 0)
     {
         assert(nff_write(*argv));
@@ -232,7 +251,7 @@ uint net_update(void)
     struct pollfd pollfds[2];
     memset(np.sys, 0x00, sizeof(np.sys));
     assert(mem_read(
-        np_table, &np, sizeof(np.udp) + sizeof(np.tcp)
+        np_table, &np, sizeof(np.udp)+sizeof(np.tcp)
     ));
     /* tcp write */
     if (np.np_tcp_id != 0)
@@ -240,8 +259,7 @@ uint net_update(void)
         assert(sendall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
         np.np_tcp_id = 0;
         assert(mem_write(
-            np_table + sizeof(np.udp), &np.np_tcp_id,
-            sizeof(np.np_tcp_id)
+            np_table + sizeof(np.udp), &np.np_tcp_id, sizeof(np.np_tcp_id)
         ));
     }
     /* udp write */
@@ -269,35 +287,42 @@ uint net_update(void)
         u32 tcp_id;
         assert(recvall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
         tcp_id = np_u32(np.np_tcp_id);
-        /* write request */
-        if (tcp_id == 0x00000000)
+        switch (tcp_id)
         {
-            void *data;
-            u32 addr = np_u32(np.np_write_addr);
-            u32 size = np_u32(np.np_write_size);
-            if (addr < 0x80000000 || addr+size >= 0x80800000)
+            /* ban */
+            case (u32)-1:
             {
-                fprintf(stderr, "error: invalid write request\n");
+                puts("You are banned from the server:");
+                puts((const char *)(&np.np_tcp_id + 1));
                 return true;
+                break;
             }
-            data = malloc(size);
-            assert(recvall(net_tcp_socket, data, size));
-            assert(mem_write(addr, data, size));
-            free(data);
-        }
-        /* peer write */
-        else if (tcp_id < NP_LEN)
-        {
-            assert(mem_write(
-                np_table + sizeof(np)*tcp_id + sizeof(np.udp),
-                np.tcp, sizeof(np.tcp)
-            ));
-        }
-        else
-        {
-            puts("You are banned from the server:");
-            puts((const char *)(&np.np_tcp_id + 1));
-            return true;
+            /* write request */
+            case (u32)-2:
+            {
+                void *data;
+                u32 addr = np_u32(np.np_write_addr);
+                u32 size = np_u32(np.np_write_size);
+                if (addr < 0x80000000 || addr+size >= 0x80800000)
+                {
+                    fprintf(stderr, "error: invalid write request\n");
+                    return true;
+                }
+                data = malloc(size);
+                assert(recvall(net_tcp_socket, data, size));
+                assert(mem_write(addr, data, size));
+                free(data);
+                break;
+            }
+            /* peer write */
+            default:
+            {
+                assert(mem_write(
+                    np_table + sizeof(np)*tcp_id + sizeof(np.udp),
+                    np.tcp, sizeof(np.tcp)
+                ));
+                break;
+            }
         }
     }
     /* udp read */

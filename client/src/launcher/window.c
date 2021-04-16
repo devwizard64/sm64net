@@ -168,12 +168,12 @@ static void window_launch(HWND hwnd)
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
     uint success;
-    if (config.proc[0] == 0x00)
+    if (config.proc[0] == 0)
     {
         window_error(hwnd, "The 'Emulator Name' field cannot be blank.");
         return;
     }
-    if (config.addr[0] == 0x00)
+    if (config.addr[0] == 0)
     {
         window_error(hwnd, "The 'IP Address' field cannot be blank.");
         return;

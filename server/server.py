@@ -58,7 +58,7 @@ def update_connect(sock, addr):
         a, sep, msg = line.partition(" ")
         if a == addr:
             if msg != "":
-                data = struct.pack(">I", 0xFFFFFFFF) + msg.encode("utf-8")
+                data = struct.pack(">i", -1) + msg.encode()
                 data = data[:sm64net.NP_TCP_SIZE]
                 data += B"\x00" * (sm64net.NP_TCP_SIZE-len(data))
                 sock.sendall(data)
@@ -75,20 +75,27 @@ def update_connect(sock, addr):
         else:
             sock.close()
 
-def update_udp(np, data):
-    np.update_udp(data)
+def update_udp(self, data):
+    self.udp = data
+    plugin.np_update_udp(self)
+    self.update_udp()
 
-def update_tcp(np, data):
-    cmd, = struct.unpack(">I", data[:0x0004])
-    if cmd == 0x00000001:
-        np.update_tcp(data)
+def update_tcp_sync(self, data):
+    self.tcp = data
+    plugin.np_update_tcp(self)
+    self.update_tcp()
+
+update_tcp_table = {sm64net.NP_CMD_SYNC: update_tcp_sync}
+
+def update_tcp(self, data):
+    cmd, = struct.unpack(">I", data[:4])
+    if cmd in update_tcp_table:
+        update_tcp_table[cmd](self, data)
     else:
-        plugin.np_update_tcp(np, cmd, data)
+        print("warning: bad tcp cmd 0x%08X" % cmd)
 
 def update():
-    sockets = [
-        np.s_tcp for np in np_table if np != None
-    ] + [s_tcp, s_udp]
+    sockets = [np.s_tcp for np in np_table if np != None] + [s_tcp, s_udp]
     rd, wr, er = select.select(sockets, [], [], 0)
     for s in rd:
         if s == s_tcp:

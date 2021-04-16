@@ -64,9 +64,7 @@ static struct menu_char_t menu_char_table[] =
 static const u8 nff_header[] =
 {
     W(0x4E464600),
-    W(np_table),
-    W(0x00000014),
-    W(0x00000014 + sizeof(struct np_t)),
+    W(0xFFFFFFFF), W(0x00000014), W(0x00000014 + sizeof(struct np_t)),
     W(0x00000000),
 };
 #undef W
@@ -114,7 +112,7 @@ static void menu_m_a(u8 *dst, const char *src, ssize_t size)
 {
     memset(dst, 0xFF, size);
     size--;
-    while (*src != 0x00 && size > 0)
+    while (*src != 0 && size > 0)
     {
         uint i;
         for (i = 0; i < lenof(menu_char_table); i++)
@@ -237,7 +235,7 @@ uint config_write_nff(void)
     struct np_t np;
     FILE *f;
     memset(&np, 0x00, sizeof(np));
-    memcpy(&np.np_name, config.name, sizeof(config.name));
+    memcpy(np.np_name, config.name, sizeof(config.name));
     np.np_colour_b[0] = config.colour >> 16;
     np.np_colour_b[1] = config.colour >>  8;
     np.np_colour_b[2] = config.colour >>  0;

@@ -31,6 +31,8 @@
 
 main_start                  = 0x00001000;
 code_main_start             = 0x80246000;
+player_touch_bound          = 0x8024D578;
+player_touch_attacked       = 0x8024D998;
 mem_dma                     = 0x80278504;
 gfx_alloc                   = 0x80278F2C;
 object_create               = 0x8029ED20;
@@ -51,7 +53,7 @@ world_gfx_table             = 0x8032DDC4;
 world_stage                 = 0x8032DDF8;
 gfx_camera                  = 0x8032DEFC;
 gfx_object                  = 0x8032DF00;
-gfx_frame                   = 0x8032DF08;
+gfx_timer                   = 0x8032DF08;
 message_kern                = 0x80331370;
 video_gfx                   = 0x8033B06C;
 ft_motion_player            = 0x8033B080;
@@ -60,6 +62,7 @@ segment_table               = 0x8033B400;
 world_index                 = 0x8033BACA;
 camera_rot_head             = 0x8033C536;
 object_p1                   = 0x80361158;
+object                      = 0x80361160;
 script_g_main               = 0x8037E0B4;
 data_motion_player_start    = 0x004EC000;
 

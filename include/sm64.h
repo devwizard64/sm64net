@@ -49,28 +49,35 @@
 #define G_R_XLU_DECAL   0x06
 #define G_R_XLU_INTER   0x07
 
+#define TOUCH_PUNCH     1
+#define TOUCH_KICK      2
+#define TOUCH_JUMP      3
+#define TOUCH_POUND     4
+#define TOUCH_KNOCK     5
+#define TOUCH_BUMP      6
+
+#define PLAYER_EYE_BLINK        0
+#define PLAYER_EYE_OPEN         1
+#define PLAYER_EYE_HALF         2
+#define PLAYER_EYE_CLOSED       3
+#define PLAYER_EYE_LEFT         4
+#define PLAYER_EYE_RIGHT        5
+#define PLAYER_EYE_UP           6
+#define PLAYER_EYE_DOWN         7
+#define PLAYER_EYE_DEAD         8
+
+#define PLAYER_CAP_NONE         0
+#define PLAYER_CAP_VANISH       1
+#define PLAYER_CAP_METAL        2
+#define PLAYER_CAP_VANISH_METAL 3
+
 #ifndef __ASSEMBLER__
 
-enum
-{
-    /* 0x00 */  PLAYER_EYE_BLINK,
-    /* 0x01 */  PLAYER_EYE_OPEN,
-    /* 0x02 */  PLAYER_EYE_HALF,
-    /* 0x03 */  PLAYER_EYE_CLOSED,
-    /* 0x04 */  PLAYER_EYE_LEFT,
-    /* 0x05 */  PLAYER_EYE_RIGHT,
-    /* 0x06 */  PLAYER_EYE_UP,
-    /* 0x07 */  PLAYER_EYE_DOWN,
-    /* 0x08 */  PLAYER_EYE_DEAD,
-};
-
-enum
-{
-    /* 0x00 */  PLAYER_CAP_NONE,
-    /* 0x01 */  PLAYER_CAP_VANISH,
-    /* 0x02 */  PLAYER_CAP_METAL,
-    /* 0x03 */  PLAYER_CAP_VANISH_METAL,
-};
+#define /* 0x00A0 */    o_pos_x         mem[ 6].f32
+#define /* 0x00A4 */    o_pos_y         mem[ 7].f32
+#define /* 0x00A8 */    o_pos_z         mem[ 8].f32
+#define /* 0x0134 */    o_touch         mem[43].u32
+#define /* 0x0190 */    o_touch_arg     mem[66].u32
 
 typedef void *OSMesg;
 typedef struct
@@ -97,7 +104,7 @@ typedef union
 }
 Gfx;
 
-struct pad_t
+struct controller_t
 {
     /* 0x00 */  s16     stick_x;
     /* 0x02 */  s16     stick_y;
@@ -185,8 +192,8 @@ struct go_t
 {
     /* 0x00 */  struct g_t g;
     /* 0x14 */  struct g_t *list;
-    /* 0x18 */  s8      world_index;
-    /* 0x19 */  s8      gfx_index;
+    /* 0x18 */  s8      world;
+    /* 0x19 */  s8      gfx;
     /* 0x1A */  s16     rot[3];
     /* 0x20 */  f32     pos[3];
     /* 0x2C */  f32     scale[3];
@@ -200,7 +207,7 @@ struct g_camera_t
 {
     /* 0x00 */  struct gc_t g;
     /* 0x1C */  f32     pos[3];
-    /* 0x28 */  f32     obj[3];
+    /* 0x28 */  f32     look[3];
     /* 0x34 */  f32   (*mtxf)[4][4];
     /* 0x38 */  s16     rot_z_m;
     /* 0x3A */  s16     rot_z_p;
@@ -215,7 +222,7 @@ struct object_t
     /* 0x006C */    struct object_t *child;
     /* 0x0070 */    u32     touch;
     /* 0x0074 */    s16     flag;
-    /* 0x0076 */    s16     object_touch_len;
+    /* 0x0076 */    s16     touch_len;
     /* 0x0078 */    struct object_t *object_touch[4];
     /* 0x0088 */    union
                     {
@@ -225,6 +232,7 @@ struct object_t
                         u16     u16[2];
                         s32     s32;
                         u32     u32;
+                        f32     f32;
                         void   *ptr;
                     }
                     mem[80];
@@ -306,7 +314,7 @@ struct player_t
     /* 0x90 */  void   *world;
     /* 0x94 */  void   *camera;
     /* 0x98 */  struct player_gfx_t *gfx;
-    /* 0x9C */  struct pad_t *pad;
+    /* 0x9C */  struct controller_t *controller;
     /* 0xA0 */  struct motion_t *motion;
     /* 0xA4 */  u32     touch;
     /* 0xA8 */  s16     coin;
@@ -326,6 +334,12 @@ struct player_t
     /* 0xC4 */  f32     gravity;
 };  /* 0xC8 */
 
+/* 0x8024D578 */ extern void player_touch_bound(
+    struct player_t *pl, struct object_t *obj, f32 radius
+);
+/* 0x8024D998 */ extern uint player_touch_attacked(
+    struct player_t *pl, struct object_t *obj
+);
 /* 0x80278504 */ extern void mem_dma(
     void *dst, const void *start, const void *end
 );
@@ -357,7 +371,7 @@ struct player_t
 /* 0x8032DDF8 */ extern s16 world_stage;
 /* 0x8032DEFC */ extern struct g_camera_t *gfx_camera;
 /* 0x8032DF00 */ extern struct g_object_t *gfx_object;
-/* 0x8032DF08 */ extern u16 gfx_frame;
+/* 0x8032DF08 */ extern u16 gfx_timer;
 /* 0x80331370 */ extern const u8 message_kern[0x100];
 /* 0x8033B06C */ extern Gfx *video_gfx;
 /* 0x8033B080 */ extern uintptr_t *ft_motion_player;
@@ -366,6 +380,7 @@ struct player_t
 /* 0x8033BACA */ extern u16 world_index;
 /* 0x8033C536 */ extern s16 camera_rot_head[2];
 /* 0x80361158 */ extern struct object_t *object_p1;
+/* 0x80361160 */ extern struct object_t *object;
 /* 0x8037E0B4 */ extern struct g_t *script_g_main(
     struct arena_t *arena, const uintptr_t *script
 );

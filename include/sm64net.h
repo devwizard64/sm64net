@@ -20,6 +20,8 @@
 #define NP_SIZE         (4*NP_UDP_LEN + 4*NP_TCP_LEN + 4*NP_SYS_LEN)
 #define NP_TIMEOUT      (30*5 + 15)
 
+#define NP_CMD_SYNC     1
+
 #define NP_GFX_BODY     0x0400
 #define NP_GFX_NAME     0x0800
 
@@ -28,22 +30,10 @@
 
 #ifndef __ASSEMBLER__
 
-/* used by the client program */
-#define /* 0x0000 */    np_udp_id_b         udp[0x00].u8
-        /* 0x0004 */
-#define /* 0x0200 */    np_tcp_id_b         tcp[0x00].u8
-
-/* used by the server to send a write request, safe for your own tcp data */
-#define /* 0x0204 */    np_write_addr_b     tcp[0x01].u8
-#define /* 0x0208 */    np_write_size_b     tcp[0x02].u8
-        /* 0x020C */
-
-/* used by the launcher */
-#define /* 0x0204 */    np_colour_b         tcp[0x01].u8
-        /* 0x0208 */    /* np_name */
-        /* 0x0228 */
+#define /* 0x01C4 */    o_np_np             mem[79].ptr
 
 #define /* 0x0000 */    np_udp_id           udp[0x00].u32
+#define /* 0x0000 */    np_udp_id_b         udp[0x00].u8
 #define /* 0x0004 */    np_pos              udp[0x01].f32
 #define /* 0x0004 */    np_pos_x            udp[0x01].f32
 #define /* 0x0008 */    np_pos_y            udp[0x02].f32
@@ -71,8 +61,12 @@
 #define /* 0x0039 */    np_timer            udp[0x0E].u8[1]
         /* 0x003A */
 #define /* 0x0200 */    np_tcp_id           tcp[0x00].u32
+#define /* 0x0200 */    np_tcp_id_b         tcp[0x00].u8
+#define /* 0x0204 */    np_write_addr_b     tcp[0x01].u8
+#define /* 0x0208 */    np_write_size_b     tcp[0x02].u8
 #define /* 0x0204 */    np_colour           tcp[0x01].u32
-#define /* 0x0208 */    np_name             tcp[0x02].u8[0]
+#define /* 0x0204 */    np_colour_b         tcp[0x01].u8
+#define /* 0x0208 */    np_name             tcp[0x02].u8
 #define /* 0x0228 */    np_stage            tcp[0x0A].u8[0]
 #define /* 0x0229 */    np_world            tcp[0x0A].u8[1]
 #define /* 0x022A */    np_motion_height    tcp[0x0A].s16[1]
@@ -109,9 +103,14 @@ struct np_t
 };  /* 0x0400 */
 
 #ifdef _NATIVE
-#define np_table        0x80025C00
+struct net_meta_t
+{
+    /* 0x00 */  u8      np_table_b[4];
+    /* 0x04 */  char    version[60];
+};  /* 0x40 */
+#define NP_TABLE        0x80000380
 #else
-extern struct np_t np_table[NP_LEN];
+extern struct np_t *np_table;
 #endif
 
 #else /* __ASSEMBLER__ */

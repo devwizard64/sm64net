@@ -3,10 +3,10 @@
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
-VERSION := 1.1.1
+VERSION := 2.0.0
 
 CC      := cc
-CCFLAG  := -I ../include -D _VERSION=\"$(VERSION)\" -D _NATIVE 
+CCFLAG  := -I ../include -D _VERSION=\"$(VERSION)\" -D _NATIVE
 CCFLAG  += -Wall -Wextra -Wpedantic -O2
 
 OBJ := \

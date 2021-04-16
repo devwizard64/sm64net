@@ -5,9 +5,7 @@
 
 import struct
 
-import server
-
-VERSION         = "1.1.1"
+VERSION         = "2.0.0"
 
 NET_PORT        = 0x1100
 
@@ -17,7 +15,13 @@ NP_UDP_SIZE     = 0x0200
 NP_TCP_SIZE     = 0x0100
 NP_SYS_SIZE     = 0x0100
 
+NP_CMD_SYNC     = 1
+
 np_name         = 0x0008
+
+np_table        = 0x80025C00
+
+import server
 
 menu_table = (
     tuple("0123456789")                                 + \
@@ -53,7 +57,7 @@ class np_t:
     def write_tcp(self, data):
         self.s_tcp.sendall(data)
     def write_mem(self, addr, data):
-        header = struct.pack(">III", 0x00000000, addr, len(data))
+        header = struct.pack(">iII", -2, addr, len(data))
         self.write_tcp(header + (0x100-len(header))*B"\x00" + data)
 
     def nff_read(self, fn):
@@ -66,7 +70,7 @@ class np_t:
         while True:
             addr, start, end = struct.unpack(">III", data[i+0x04:i+0x10])
             i += 0x0C
-            if addr == 0x00000000:
+            if addr == 0:
                 break
             nff.append((addr, data[start:end]))
         return nff
@@ -89,25 +93,18 @@ class np_t:
                 else:
                     w, d = dst.write_udp, src.udp
                 if d != None:
-                    w(struct.pack(">I", n) + d[0x0004:])
-    def sync_read_tcp(self):
-        self.sync(False, True)
-    def sync_write_udp(self, data):
-        self.udp = data
-        self.sync(True, False)
-    def sync_write_tcp(self, data):
-        self.tcp = data
-        self.sync(True, True)
+                    w(struct.pack(">I", n) + d[4:])
 
     def update_connect(self):
-        self.sync_read_tcp()
-    def update_tcp(self, data):
-        self.sync_write_tcp(data)
+        self.write_tcp(struct.pack(">I59s1x", np_table, VERSION.encode()))
+        self.sync(False, True)
+    def update_tcp(self):
+        self.sync(True, True)
         start = np_name
         end   = np_name + 1*(NP_NAME_LEN-1)
         self.name = "".join([
             menu_table[struct.unpack(">B", self.tcp[c:c+1])[0]]
             for c in range(start, end)
         ])
-    def update_udp(self, data):
-        self.sync_write_udp(data)
+    def update_udp(self):
+        self.sync(True, False)
