@@ -16,14 +16,11 @@ SECTIONS
     nm_heap = 0x8005C000 - (1+NM_PAGE_SIZE)*NM_PAGE_LEN;
     CODE(np_table + NP_SIZE*NP_LEN, net_main,
         TEXT(build/main.o)
-        DATA(build/main.o)
-#ifdef _CHARACTER
-        DATA(build/script.ld.o)
-#endif
-        ,
+        DATA(build/main.o),
         BSS(build/main.o)
     )
 #ifdef _CHARACTER
+    CODE(nm_heap, net_script, DATA(build/script.ld.o),)
     CODE(0x80400000, net_gfx, DATA(build/gfx.ld.o),)
     net_gfx_arena_start  = .;
     net_gfx_arena_end    = 0x80800000;

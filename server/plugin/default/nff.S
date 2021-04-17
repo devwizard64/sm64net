@@ -10,6 +10,7 @@
 .word 0x4E464600
     NFF(net_main)
 #ifdef _CHARACTER
+    NFF(net_script)
     NFF(net_gfx)
 #endif
     NFF(net_hook)
