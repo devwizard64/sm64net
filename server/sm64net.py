@@ -16,8 +16,10 @@ NP_TCP_SIZE     = 0x0100
 NP_SYS_SIZE     = 0x0100
 
 NP_CMD_SYNC     = 1
+NP_CMD_TOUCH    = 2
 
 np_name         = 0x0008
+np_touch        = 0x002D
 
 np_table        = 0x80025C00
 
@@ -43,7 +45,7 @@ menu_table = (
     ("[coin]", "[star]", "[x]", "[*]", "[star_outline]", "\\n", "")
 )
 
-class np_t:
+class np:
     def __init__(self, tcp, udp, addr):
         self.s_udp  = udp
         self.s_tcp  = tcp
@@ -95,10 +97,9 @@ class np_t:
                 if d != None:
                     w(struct.pack(">I", n) + d[4:])
 
-    def update_connect(self):
-        self.write_tcp(struct.pack(">I59s1x", np_table, VERSION.encode()))
-        self.sync(False, True)
-    def update_tcp(self):
+    def cmd_sync(self, data):
+        data = data[:np_touch] + B"\x00" + data[np_touch+1:]
+        self.tcp = data
         self.sync(True, True)
         start = np_name
         end   = np_name + 1*(NP_NAME_LEN-1)
@@ -106,5 +107,33 @@ class np_t:
             menu_table[struct.unpack(">B", self.tcp[c:c+1])[0]]
             for c in range(start, end)
         ])
-    def update_udp(self):
+    def cmd_touch(self, data):
+        touch, = struct.unpack(">B", data[np_touch:np_touch+1])
+        s = server.np_table.index(self)
+        for i, np in enumerate(server.np_table):
+            if np != None and np != self:
+                n = s if s != 0 else i
+                x = i if i != 0 else s
+                a = struct.pack(">I", n)
+                b = struct.pack(">B", n if x == touch else 0)
+                np.write_tcp(a + data[4:np_touch] + b + data[np_touch+1:])
+    cmd_table = {
+        NP_CMD_SYNC:  cmd_sync,
+        NP_CMD_TOUCH: cmd_touch,
+    }
+
+    def update_connect(self):
+        self.write_tcp(struct.pack(">I59s1x", np_table, VERSION.encode()))
+        self.nff_write_file("dab.nff")
+        self.nff_write_file("print_font.nff")
+        self.nff_write_file("build/main.nff")
+        self.sync(False, True)
+    def update_tcp(self, data):
+        cmd, = struct.unpack(">I", data[:4])
+        if cmd in self.cmd_table:
+            self.cmd_table[cmd](self, data)
+        else:
+            print("warning: bad cmd 0x%08X" % cmd)
+    def update_udp(self, data):
+        self.udp = data
         self.sync(True, False)

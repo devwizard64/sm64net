@@ -8,5 +8,5 @@ build/main.elf:     build/nff.o build/main.o build/gfx.ld.o build/script.ld.o
 build/gfx.ld.o:     gfx_metaknight.o gfx_bandanadee.o
 build/script.ld.o:  script_metaknight.o script_bandanadee.o
 
-FLAG    := -I ../../../include -D _LOCATION -D _CHARACTER -D _TOUCH
-include ../../../include/sm64.mk
+FLAG    := -I ../include -D _LOCATION -D _CHARACTER -D _TOUCH
+include ../include/sm64.mk

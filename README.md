@@ -34,12 +34,6 @@ Use WSL to compile the server on Windows.
 * `apt install make gcc-mips-linux-gnu`
 * `pip install windows-curses`
 
-### Usage
-*Python 2 is also supported.*
-
-`python3 main.py [plugin]`
-* `plugin` - Server plugin, defaults to `default`
-
 ## Client
 
 ### Dependencies

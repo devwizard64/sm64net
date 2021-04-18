@@ -11,7 +11,7 @@ import sm64net
 import server
 import ui
 
-def main(argv):
+def main():
     print(
         "SM64Net Server " + sm64net.VERSION + "\n"
         "Copyright (C) 2019 - 2021  devwizard\n"
@@ -19,19 +19,17 @@ def main(argv):
         "License\n"
         "version 2.  See LICENSE for more information."
     )
-    server.init(argv[1] if len(argv) > 1 else "default")
+    server.init()
     ui.init()
     try:
-        while True:
-            for i in range(32):
+        while ui.update():
+            for _ in range(sm64net.NP_LEN):
                 server.update()
-                time.sleep(1.0/30.0 / sm64net.NP_LEN)
-            if not ui.update():
-                break
+                time.sleep(0.001)
     finally:
         server.destroy()
         ui.destroy()
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())
