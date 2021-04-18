@@ -14,7 +14,7 @@ SECTIONS
     __dev = 0;
     SECTION(0, nff, TEXT(build/nff.o))
     nm_heap = 0x8005C000 - (1+NM_PAGE_SIZE)*NM_PAGE_LEN;
-    CODE(np_table + NP_SIZE*NP_LEN, net_main,
+    CODE(0x8002DC00, net_main,
         TEXT(build/main.o)
         DATA(build/main.o),
         BSS(build/main.o)
