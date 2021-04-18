@@ -663,7 +663,7 @@ static void np_update_self(struct np_t *np, struct player_t *pl)
     }
     if (pg->eye == PLAYER_EYE_BLINK)
     {
-        uint i = (g_timer >> 1) & 0x1F;
+        uint i = g_timer >> 1 & 0x1F;
         eye = i < lenof(player_blink) ? player_blink[i] : 0;
     }
     else
