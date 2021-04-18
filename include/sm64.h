@@ -188,7 +188,7 @@ struct go_motion_t
     /* 0x10 0x48 */ s32     frame_vel;
 };  /* 0x14 0x4C */
 
-struct go_t
+struct g_object_t
 {
     /* 0x00 */  struct g_t g;
     /* 0x14 */  struct g_t *list;
@@ -215,7 +215,7 @@ struct g_camera_t
 
 struct object_t
 {
-    /* 0x0000 */    struct go_t g;
+    /* 0x0000 */    struct g_object_t g;
     /* 0x0060 */    struct object_t *next;
     /* 0x0064 */    struct object_t *prev;
     /* 0x0068 */    struct object_t *parent;
@@ -369,12 +369,13 @@ struct player_t
 /* 0x8032DD50 */ extern u8 player_blink[8];
 /* 0x8032DDC4 */ extern struct g_t **world_gfx_table;
 /* 0x8032DDF8 */ extern s16 world_stage;
-/* 0x8032DEFC */ extern struct g_camera_t *gfx_camera;
-/* 0x8032DF00 */ extern struct g_object_t *gfx_object;
-/* 0x8032DF08 */ extern u16 gfx_timer;
+/* 0x8032DEFC */ extern struct g_camera_t *g_camera;
+/* 0x8032DF00 */ extern struct g_object_t *g_object;
+/* 0x8032DF08 */ extern u16 g_timer;
 /* 0x80331370 */ extern const u8 message_kern[0x100];
 /* 0x8033B06C */ extern Gfx *video_gfx;
 /* 0x8033B080 */ extern uintptr_t *ft_motion_player;
+/* 0x8033B350 */ extern struct g_object_t g_object_mirror;
 /* 0x8033B3B0 */ extern struct player_gfx_t player_gfx_table[2];
 /* 0x8033B400 */ extern uintptr_t segment_table[0x20];
 /* 0x8033BACA */ extern u16 world_index;

@@ -4,8 +4,7 @@
 #         Public License version 2.  See LICENSE for more information.
 
 build/main.nff:
-build/main.elf:     build/nff.o build/main.o build/hook.o
-build/main.elf:     build/gfx.ld.o build/script.ld.o
+build/main.elf:     build/nff.o build/main.o build/gfx.ld.o build/script.ld.o
 build/gfx.ld.o:     gfx_metaknight.o gfx_bandanadee.o
 build/script.ld.o:  script_metaknight.o script_bandanadee.o
 

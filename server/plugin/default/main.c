@@ -356,16 +356,12 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
         struct gc_t *gc = (struct gc_t *)g;
         struct player_gfx_t *pg        = &player_gfx_table[0];
         struct player_gfx_t *pg_backup = &player_gfx_table[1];
-        struct camera_t *cam = (struct camera_t *)gfx_camera->g.arg;
-        struct object_t *obj = (struct object_t *)gfx_object;
+        struct camera_t *cam = (struct camera_t *)g_camera->g.arg;
+        struct object_t *obj = g_object == &g_object_mirror ?
+            object_p1 : (struct object_t *)g_object;
         if (gc->arg == 0)
         {
             struct np_t *np = obj->o_np_np;
-            Gfx *gfx;
-            Gfx *gfx_backup;
-            ptrdiff_t size;
-            uint w;
-            uint h;
             *pg_backup = *pg;
             *net_rot_head_backup = *camera_rot_head;
             net_cam_mode_backup = cam->mode;
@@ -388,41 +384,42 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
             }
             g_np_gfx.child =
                 (np->np_gfx_flag_l & NP_GFX_BODY) ? np->np_gfx : NULL;
-            if (!(np->np_gfx_flag_l & NP_GFX_NAME))
+            if (np->np_gfx_flag_l & NP_GFX_NAME)
             {
-                return NULL;
-            }
-            gfx_backup = video_gfx;
-            (&np->np_name[0])[NP_NAME_LEN-1] = 0xFF;
-            w = menu_str_w(np->np_name);
-            h = menu_str_h(np->np_name);
-            message_print(-w >> 1, h, np->np_name);
-            size = (u8 *)video_gfx - (u8 *)gfx_backup;
-            gfx = gfx_alloc(sizeof(*gfx)*3 + size);
-            video_gfx = gfx_backup;
-            if (gfx != NULL)
-            {
-                Gfx *dst = gfx;
-                Gfx *src = gfx_backup;
-                dst->w.w0 = 0x06000000;
-                dst->w.w1 = (uintptr_t)gfx_np_name_start;
-                dst++;
-                dst->w.w0 = 0xFB000000;
-                dst->w.w1 = np->np_colour;
-                dst++;
-                do
+                Gfx *gfx_backup;
+                Gfx *gfx;
+                uint size;
+                uint w;
+                uint h;
+                gfx_backup = video_gfx;
+                (&np->np_name[0])[NP_NAME_LEN-1] = 0xFF;
+                w = menu_str_w(np->np_name);
+                h = menu_str_h(np->np_name);
+                message_print(-w >> 1, h, np->np_name);
+                size = (u8 *)video_gfx - (u8 *)gfx_backup;
+                gfx = gfx_alloc(sizeof(*gfx)*3 + size);
+                video_gfx = gfx_backup;
+                if (gfx != NULL)
                 {
-                    dst->w.w0 = src->w.w0;
-                    dst->w.w1 = src->w.w1;
+                    Gfx *dst = gfx;
+                    Gfx *src = gfx_backup;
+                    dst->w.w0 = 0x06000000;
+                    dst->w.w1 = (uintptr_t)gfx_np_name_start;
                     dst++;
-                    src++;
-                    size -= sizeof(*dst);
+                    dst->w.w0 = 0xFB000000;
+                    dst->w.w1 = np->np_colour;
+                    dst++;
+                    do
+                    {
+                        *dst++ = *src++;
+                        size -= sizeof(*dst);
+                    }
+                    while (size > 0);
+                    dst->w.w0 = 0x06010000;
+                    dst->w.w1 = (uintptr_t)gfx_np_name_end;
                 }
-                while (size > 0);
-                dst->w.w0 = 0x06010000;
-                dst->w.w1 = (uintptr_t)gfx_np_name_end;
+                return gfx;
             }
-            return gfx;
         }
         else
         {
@@ -666,7 +663,7 @@ static void np_update_self(struct np_t *np, struct player_t *pl)
     }
     if (pg->eye == PLAYER_EYE_BLINK)
     {
-        uint i = (gfx_timer >> 1) & 0x1F;
+        uint i = (g_timer >> 1) & 0x1F;
         eye = i < lenof(player_blink) ? player_blink[i] : 0;
     }
     else
@@ -797,7 +794,6 @@ static void np_update_peer(struct np_t *np)
 static void net_init(void)
 {
     uint i;
-    bzero(nm_heap.page, sizeof(nm_heap.page));
     world_gfx_table[2] = &g_np;
     np_init_self(&np_table[0]);
     for (i = 1; i < NP_LEN; i++)
@@ -805,6 +801,7 @@ static void net_init(void)
         np_init_peer(&np_table[i]);
     }
     net_init_character();
+    bzero(nm_heap.page, sizeof(nm_heap.page));
 }
 
 static void net_update(void)

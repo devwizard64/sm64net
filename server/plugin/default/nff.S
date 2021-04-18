@@ -7,6 +7,8 @@
 
 #include <sm64net.h>
 
+.set noreorder
+
 .word 0x4E464600
     NFF(net_main)
 #ifdef _CHARACTER
@@ -15,3 +17,10 @@
 #endif
     NFF(net_hook)
 .word 0
+
+code_net_hook_start = 0x80248BE0
+net_hook_start:
+    la      $4, main
+    jalr    $4
+    addiu   $ra, $ra, -0x0080
+net_hook_end:
