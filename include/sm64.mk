@@ -7,8 +7,8 @@ CC      := mips-linux-gnu-gcc
 LD      := mips-linux-gnu-ld
 CPP     := mips-linux-gnu-cpp
 OBJCOPY := mips-linux-gnu-objcopy
-CC      += -march=vr4300 -mfix4300 -mfp32 -mno-abicalls -fno-PIC
-CC      += -ffreestanding -fno-zero-initialized-in-bss -G 0
+CC      += -march=vr4300 -mfix4300 -mfp32 -mno-abicalls -mno-check-zero-division
+CC      += -fno-PIC -ffreestanding -fno-zero-initialized-in-bss -G 0
 CC      += -Wall -Wextra -Wpedantic -Os $(FLAG)
 LD      += --accept-unknown-input-arch --no-check-sections
 CPP     += -U mips $(FLAG)
