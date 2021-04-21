@@ -151,7 +151,7 @@ static void window_about(HWND hwnd)
 {
     MessageBox(
         hwnd,
-        "SM64Net " _VERSION "\n"
+        "SM64Net " _VERSION "." _REVISION "\n"
         "Copyright (C) 2019 - 2021  devwizard\n"
         "\n"
         "This project is licensed under the terms of the GNU General Public "

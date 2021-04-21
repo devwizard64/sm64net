@@ -13,8 +13,6 @@
 
 #include <types.h>
 
-#include "assert.h"
-
 static struct ftdi_context *usb_ftdi;
 
 uint mem_read(uint addr, void *dst, size_t size)
@@ -32,13 +30,11 @@ uint mem_read(uint addr, void *dst, size_t size)
     buf[0x08] = 0;
     if (ftdi_write_data(usb_ftdi, buf, sizeof(buf)) < 0)
     {
-        fprintf(stderr, "error: rsig (w) failed\n");
-        return true;
+        eprint("rsig (w) failed\n");
     }
     if (ftdi_read_data(usb_ftdi, dst, size) < 0)
     {
-        fprintf(stderr, "error: rprc (r) failed\n");
-        return true;
+        eprint("rprc (r) failed\n");
     }
     return false;
 }
@@ -58,13 +54,11 @@ uint mem_write(uint addr, const void *src, size_t size)
     buf[0x08] = 1;
     if (ftdi_write_data(usb_ftdi, buf, sizeof(buf)) < 0)
     {
-        fprintf(stderr, "error: wsig (w) failed\n");
-        return true;
+        eprint("wsig (w) failed\n");
     }
     if (ftdi_write_data(usb_ftdi, src, size) < 0)
     {
-        fprintf(stderr, "error: wprc (w) failed\n");
-        return true;
+        eprint("wprc (w) failed\n");
     }
     return false;
 }
@@ -74,14 +68,12 @@ uint mem_init(unused const char *proc)
     usb_ftdi = ftdi_new();
     if (usb_ftdi == NULL)
     {
-        fprintf(stderr, "error: ftdi_new() failed\n");
-        return true;
+        eprint("ftdi_new() failed\n");
     }
     if (ftdi_usb_open(usb_ftdi, 0x0403, 0x6001) < 0)
     {
-        fprintf(stderr, "error: EverDrive not plugged in\n");
         ftdi_free(usb_ftdi);
-        return true;
+        eprint("EverDrive not plugged in\n");
     }
     usb_ftdi->usb_read_timeout  = 500;
     usb_ftdi->usb_write_timeout = 500;

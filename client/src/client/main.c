@@ -12,7 +12,6 @@
 
 #include <types.h>
 
-#include "assert.h"
 #include "mem.h"
 #include "net.h"
 
@@ -22,7 +21,7 @@ int main(int argc, const char **argv)
     const char *addr;
     long int port;
     puts(
-        "SM64Net Client " _VERSION "\n"
+        "SM64Net Client " _VERSION "." _REVISION "\n"
         "Copyright (C) 2019 - 2021  devwizard\n"
         "This project is licensed under the terms of the GNU General Public "
         "License\n"
@@ -30,10 +29,7 @@ int main(int argc, const char **argv)
     );
     if (argc < 4)
     {
-        fprintf(
-            stderr, "usage: %s <proc> <addr> <port> [nff ...]\n",
-            argv[0]
-        );
+        fprintf(stderr, "usage: %s <proc> <addr> <port> [nff ...]\n", argv[0]);
         return EXIT_FAILURE;
     }
     proc = argv[1];

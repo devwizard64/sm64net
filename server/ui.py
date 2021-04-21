@@ -5,6 +5,7 @@
 
 import curses
 
+import sm64net
 import server
 
 stdscr = None
@@ -25,9 +26,9 @@ def destroy():
 def update():
     global stdscr
     y = 0
-    stdscr.addstr(y, 0, 33*" " + "SM64Net Server" + 33*" ", curses.A_REVERSE)
+    stdscr.addstr(y, 0, sm64net.VERSION_STR.center(80), curses.A_REVERSE)
     y += 2
-    stdscr.addstr(y, 0, "Clients:" + 72*" ", curses.A_REVERSE)
+    stdscr.addstr(y, 0, "Clients:".ljust(80), curses.A_REVERSE)
     y += 1
     l = len(server.np_table)
     h = l//2
@@ -43,12 +44,10 @@ def update():
                 ln += " %02d %s" % (n, np.name if np.name != None else "<null>")
             if len(ln) > 38:
                 ln = ln[:35] + "..."
-            ln += (38-len(ln))*" "
-            s += ln
+            s += ln.ljust(38)
             if x == 0:
                 s += " |"
-        s += (79-len(s))*" "
-        stdscr.addstr(y, 0, s)
+        stdscr.addstr(y, 0, s.ljust(79))
         y += 1
-    stdscr.addstr(y, 0, "Press 'q' to quit." + 62*" ", curses.A_REVERSE)
+    stdscr.addstr(y, 0, "Press 'q' to quit.".ljust(80), curses.A_REVERSE)
     return stdscr.getch() != ord("q")

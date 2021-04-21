@@ -18,7 +18,9 @@
 #define NP_TCP_LEN      0x40
 #define NP_SYS_LEN      0x40
 #define NP_SIZE         (4*NP_UDP_LEN + 4*NP_TCP_LEN + 4*NP_SYS_LEN)
+
 #define NP_TIMEOUT      (30*5 + 15)
+#define NP_DELTA_MAX    10
 
 #define NP_CMD_SYNC     1
 

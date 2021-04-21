@@ -5,7 +5,9 @@
 
 import struct
 
-VERSION         = "2.0.0"
+VERSION         = "2.1"
+REVISION        = "0"
+VERSION_STR     = "SM64Net Server " + VERSION+"."+REVISION
 
 NET_PORT        = 0x1100
 
@@ -124,10 +126,14 @@ class np:
 
     def update_connect(self):
         self.write_tcp(struct.pack(">I59s1x", np_table, VERSION.encode()))
-        self.nff_write_file("dab.nff")
-        self.nff_write_file("print_font.nff")
-        self.nff_write_file("build/main.nff")
-        self.sync(False, True)
+        try:
+            self.nff_write_file("dab.nff")
+            self.nff_write_file("print_font.nff")
+            self.nff_write_file("build/main.nff")
+            self.sync(False, True)
+        # connection rejected
+        except:
+            pass
     def update_tcp(self, data):
         cmd, = struct.unpack(">I", data[:4])
         if cmd in self.cmd_table:

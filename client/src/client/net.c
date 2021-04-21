@@ -13,40 +13,38 @@
 #include <errno.h>
 
 #ifdef WIN32
+
 #include <winsock2.h>
-#ifndef POLLIN
-#define POLLIN  0x0300
-#endif
-#ifndef WSAPOLLFD
-typedef struct pollfd
-{
-    SOCKET      fd;
-    SHORT       events;
-    SHORT       revents;
-}
-WSAPOLLFD, *PWSAPOLLFD, FAR *LPWSAPOLLFD;
-#endif
-#ifndef WSAPoll
-WINSOCK_API_LINKAGE int WSAAPI WSAPoll(
-    _Inout_ LPWSAPOLLFD fdArray,
-    _In_ ULONG fds,
-    _In_ INT timeout
-);
-#endif
 #include <ws2tcpip.h>
 #include <windows.h>
+
+#define poll WSAPoll
+
+#define e_msg(c, msg)  \
+    {if (c) {eprint(msg " (%d)\n", WSAGetLastError());}}
+
+#define e_socket(e, msg)    e_msg((e) == SOCKET_ERROR, msg)
+#define e_socketfd(e, msg)  e_msg((e) == INVALID_SOCKET, msg)
+
 #else
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <poll.h>
+
+#define e_socket(e, msg)  \
+    {if ((e) < 0) {eprint(msg " (%s)\n", strerror(errno));}}
+#define e_socketfd  e_socket
+
+#define SOCKET int
+
 #endif
 
 #include <types.h>
 #include <sm64net.h>
 
-#include "assert.h"
 #include "mem.h"
 
 #define W(i) (b[(i)+0] << 24 | b[(i)+1] << 16 | b[(i)+2] << 8 | b[(i)+3])
@@ -54,8 +52,8 @@ WINSOCK_API_LINKAGE int WSAAPI WSAPoll(
 
 static const char str_version[] = _VERSION;
 
-static int net_tcp_socket;
-static int net_udp_socket;
+static SOCKET net_tcp_socket;
+static SOCKET net_udp_socket;
 static struct sockaddr_in net_tcp_addr;
 static struct sockaddr_in net_udp_addr;
 static bool net_banned = true;
@@ -67,7 +65,7 @@ static uint recvall(int sockfd, void *buf, size_t len)
     do
     {
         int size = recv(sockfd, (char *)buf + i, len, 0);
-        assert_msg(size < 0, "recv() failed");
+        e_socket(size, "recv() failed");
         if (size == 0)
         {
             puts(
@@ -89,7 +87,7 @@ static uint sendall(int sockfd, const void *buf, size_t len)
     do
     {
         int size = send(sockfd, (const char *)buf + i, len, 0);
-        assert_msg(size < 0, "send() failed");
+        e_socket(size, "send() failed");
         i   += size;
         len -= size;
     }
@@ -106,8 +104,7 @@ static uint nff_write(const char *fn)
     f = fopen(fn, "rb");
     if (f == NULL)
     {
-        fprintf(stderr, "error: could not read '%s'\n", fn);
-        return true;
+        eprint("could not read '%s'\n", fn);
     }
     fseek(f, 0, SEEK_END);
     size = ftell(f);
@@ -117,9 +114,8 @@ static uint nff_write(const char *fn)
     fclose(f);
     if (W(0x00) != 0x4E464600)
     {
-        fprintf(stderr, "error: '%s' is not a valid NFF file\n", fn);
         free(data);
-        return true;
+        eprint("'%s' is not a valid NFF file\n", fn);
     }
     while (true)
     {
@@ -147,93 +143,58 @@ static uint nff_write(const char *fn)
 
 uint net_init(const char *addr, long int port, const char **argv, int argc)
 {
+    struct net_meta_t meta;
+    struct addrinfo *result;
+    int opt;
     int error;
 #ifdef WIN32
     /* init WSA */
+    WSADATA wsa_data;
+    error = WSAStartup(WINSOCK_VERSION, &wsa_data);
+    if (error != NO_ERROR)
     {
-        WSADATA wsa_data;
-        error = WSAStartup(MAKEWORD(2, 2), &wsa_data);
-        if (error)
-        {
-            const char *str;
-            switch (error)
-            {
-                case WSAEFAULT:             str = "WSAEFAULT";          break;
-                case WSAEINPROGRESS:        str = "WSAEINPROGRESS";     break;
-                case WSAEPROCLIM:           str = "WSAEPROCLIM";        break;
-                case WSASYSNOTREADY:        str = "WSASYSNOTREADY";     break;
-                case WSAVERNOTSUPPORTED:    str = "WSAVERNOTSUPPORTED"; break;
-                default:                    str = NULL;                 break;
-            }
-            if (str != NULL)
-            {
-                fprintf(stderr, "error: WSAStartup() failed (%s)\n", str);
-            }
-            else
-            {
-                fprintf(stderr, "error: WSAStartup() failed (%d)\n", error);
-            }
-            return true;
-        }
+        eprint("WSAStartup() failed (%d)\n", error);
     }
 #endif
     /* create tcp and udp sockets */
-    net_tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
-    assert_msg(net_tcp_socket < 0, "could not create TCP socket");
-    net_udp_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    assert_msg(net_udp_socket < 0, "could not create UDP socket");
+    net_tcp_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    e_socketfd(net_tcp_socket, "could not create TCP socket");
+    net_udp_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    e_socketfd(net_udp_socket, "could not create UDP socket");
     /* make it so that if it crashes or something you can reconnect */
+    opt = true;
+    error = setsockopt(
+        net_udp_socket, SOL_SOCKET, SO_REUSEADDR, (void *)&opt, sizeof(opt)
+    );
+    error = getaddrinfo(addr, NULL, NULL, &result);
+    if (error != 0)
     {
-        int opt = true;
-        error = setsockopt(
-            net_udp_socket, SOL_SOCKET, SO_REUSEADDR, (void *)&opt, sizeof(opt)
-        );
-        assert_msg(error < 0, "setsockopt(SO_REUSEADDR) failed");
+        eprint("getaddrinfo() failed (%s)\n", gai_strerror(error));
     }
-    /* is this necessary? docs don't say anything about it but examples do */
-    memset(&net_tcp_addr, 0x00, sizeof(net_tcp_addr));
-    memset(&net_udp_addr, 0x00, sizeof(net_udp_addr));
-    net_tcp_addr.sin_family = AF_INET;
-    net_tcp_addr.sin_port = htons(port);
-    net_udp_addr.sin_family = AF_INET;
-    net_udp_addr.sin_port = htons(port);
-    net_udp_addr.sin_addr.s_addr = INADDR_ANY;
-    {
-        struct addrinfo *result;
-        error = getaddrinfo(addr, NULL, NULL, &result);
-        if (error != 0)
-        {
-            fprintf(
-                stderr, "error: getaddrinfo() failed (%s)\n",
-                gai_strerror(error)
-            );
-            return true;
-        }
-        net_tcp_addr.sin_addr.s_addr =
-            ((struct sockaddr_in *)result->ai_addr)->sin_addr.s_addr;
-        freeaddrinfo(result);
-    }
+    e_socket(error, "setsockopt(SO_REUSEADDR) failed");
+    net_tcp_addr.sin_family = net_udp_addr.sin_family = AF_INET;
+    net_tcp_addr.sin_port   = net_udp_addr.sin_port   = htons(port);
+    net_tcp_addr.sin_addr.s_addr =
+        ((struct sockaddr_in *)result->ai_addr)->sin_addr.s_addr;
+    net_udp_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    freeaddrinfo(result);
     error = connect(
         net_tcp_socket, (struct sockaddr *)&net_tcp_addr, sizeof(net_tcp_addr)
     );
-    assert_msg(error < 0, "could not connect to server");
+    e_socket(error, "could not connect to server");
     error = bind(
         net_udp_socket, (struct sockaddr *)&net_udp_addr, sizeof(net_udp_addr)
     );
-    assert_msg(error < 0, "bind() failed");
+    e_socket(error, "bind() failed");
     net_udp_addr.sin_addr.s_addr = net_tcp_addr.sin_addr.s_addr;
+    assert(recvall(net_tcp_socket, &meta, sizeof(meta)));
+    meta.version[lenof(meta.version)-1] = 0;
+    if (memcmp(meta.version, str_version, sizeof(str_version)) != 0)
     {
-        struct net_meta_t meta;
-        assert(recvall(net_tcp_socket, &meta, sizeof(meta)));
-        meta.version[lenof(meta.version)-1] = 0;
-        if (memcmp(meta.version, str_version, sizeof(str_version)) != 0)
-        {
-            fprintf(stderr, "error: server is version %s\n", meta.version);
-            return true;
-        }
-        assert(mem_write(NP_TABLE, meta.np_table_b, sizeof(meta.np_table_b)));
-        np_table = np_u32(meta.np_table);
+        eprint("server is version %s\n", meta.version);
     }
+    assert(mem_write(NP_TABLE, meta.np_table_b, sizeof(meta.np_table_b)));
+    np_table = np_u32(meta.np_table);
     while (argc > 0)
     {
         assert(nff_write(*argv));
@@ -246,9 +207,9 @@ uint net_init(const char *addr, long int port, const char **argv, int argc)
 
 uint net_update(void)
 {
+    uint i;
     int error;
     struct np_t np;
-    struct pollfd pollfds[2];
     memset(np.sys, 0x00, sizeof(np.sys));
     assert(mem_read(
         np_table, &np, sizeof(np.udp)+sizeof(np.tcp)
@@ -267,81 +228,83 @@ uint net_update(void)
         net_udp_socket, (void *)np.udp, sizeof(np.udp), 0,
         (struct sockaddr *)&net_udp_addr, sizeof(net_udp_addr)
     );
-    assert_msg(error < 0, "sendto() failed");
-    /* check for nonblocking read */
-    pollfds[0].fd = net_tcp_socket;
-    pollfds[0].events = POLLIN;
-    pollfds[0].revents = 0;
-    pollfds[1].fd = net_udp_socket;
-    pollfds[1].events = POLLIN;
-    pollfds[1].revents = 0;
-#ifdef WIN32
-    error = WSAPoll(pollfds, 2, 0);
-#else
-    error = poll(pollfds, 2, 0);
-#endif
-    assert_msg(error < 0, "poll() failed");
-    /* tcp read */
-    if (pollfds[0].revents & POLLIN)
+    e_socket(error, "sendto() failed");
+    for (i = 0; i < NP_LEN-1; i++)
     {
-        u32 tcp_id;
-        assert(recvall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
-        tcp_id = np_u32(np.np_tcp_id);
-        switch (tcp_id)
+        /* check for nonblocking read */
+        struct pollfd pollfds[2];
+        pollfds[0].fd = net_tcp_socket;
+        pollfds[0].events = POLLIN;
+        pollfds[0].revents = 0;
+        pollfds[1].fd = net_udp_socket;
+        pollfds[1].events = POLLIN;
+        pollfds[1].revents = 0;
+        error = poll(pollfds, lenof(pollfds), 0);
+        e_socket(error, "poll() failed");
+        if ((pollfds[0].revents | pollfds[1].revents) == 0)
         {
-            /* ban */
-            case (u32)-1:
+            break;
+        }
+        /* tcp read */
+        if (pollfds[0].revents & POLLIN)
+        {
+            u32 tcp_id;
+            assert(recvall(net_tcp_socket, np.tcp, sizeof(np.tcp)));
+            tcp_id = np_u32(np.np_tcp_id);
+            switch (tcp_id)
             {
-                puts("You are banned from the server:");
-                puts((const char *)(&np.np_tcp_id + 1));
-                return true;
-                break;
-            }
-            /* write request */
-            case (u32)-2:
-            {
-                void *data;
-                u32 addr = np_u32(np.np_write_addr);
-                u32 size = np_u32(np.np_write_size);
-                if (addr < 0x80000000 || addr+size >= 0x80800000)
+                /* ban */
+                case (u32)-1:
                 {
-                    fprintf(stderr, "error: invalid write request\n");
+                    puts("You are banned from the server:");
+                    puts((const char *)(&np.np_tcp_id + 1));
                     return true;
+                    break;
                 }
-                data = malloc(size);
-                assert(recvall(net_tcp_socket, data, size));
-                assert(mem_write(addr, data, size));
-                free(data);
-                break;
-            }
-            /* peer write */
-            default:
-            {
-                assert(mem_write(
-                    np_table + sizeof(np)*tcp_id + sizeof(np.udp),
-                    np.tcp, sizeof(np.tcp)
-                ));
-                break;
+                /* write request */
+                case (u32)-2:
+                {
+                    void *data;
+                    u32 addr = np_u32(np.np_write_addr);
+                    u32 size = np_u32(np.np_write_size);
+                    if (addr < 0x80000000 || addr+size >= 0x80800000)
+                    {
+                        eprint("invalid write request\n");
+                    }
+                    data = malloc(size);
+                    assert(recvall(net_tcp_socket, data, size));
+                    assert(mem_write(addr, data, size));
+                    free(data);
+                    break;
+                }
+                /* peer write */
+                default:
+                {
+                    assert(mem_write(
+                        np_table + sizeof(np)*tcp_id + sizeof(np.udp),
+                        np.tcp, sizeof(np.tcp)
+                    ));
+                    break;
+                }
             }
         }
-    }
-    /* udp read */
-    if (pollfds[1].revents & POLLIN)
-    {
-        u32 udp_id;
-        error = recvfrom(
-            net_udp_socket, (void *)np.udp, sizeof(np.udp), 0, NULL, NULL
-        );
-        udp_id = np_u32(np.np_udp_id);
-        assert_msg(error < 0, "recvfrom() failed");
-        assert(mem_write(
-            np_table + sizeof(np)*udp_id, np.udp, sizeof(np.udp)
-        ));
+        /* udp read */
+        if (pollfds[1].revents & POLLIN)
+        {
+            u32 udp_id;
+            error = recvfrom(
+                net_udp_socket, (void *)np.udp, sizeof(np.udp), 0, NULL, NULL
+            );
+            udp_id = np_u32(np.np_udp_id);
+            e_socket(error, "recvfrom() failed");
+            assert(mem_write(
+                np_table + sizeof(np)*udp_id, np.udp, sizeof(np.udp)
+            ));
+        }
     }
 #ifdef WIN32
     Sleep(33);
 #else
-    /* supposedly i am not supposed to do this, but this is convenient */
     usleep(33333);
 #endif
     return false;

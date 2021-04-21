@@ -769,10 +769,12 @@ static void np_update_peer(struct np_t *np)
     obj->g.motion.motion = np->np_motion;
     if (np->np_timer == NP_TIMEOUT)
     {
+        uint delta;
         obj->g.motion.frame     = np->np_motion_frame_amt >> 16;
         obj->g.motion.frame_amt = np->np_motion_frame_amt;
         obj->g.motion.frame_vel = np->np_motion_frame_vel;
-        np->np_timer_delta = np->np_timer - np->np_timer_prev;
+        delta = np->np_timer - np->np_timer_prev;
+        np->np_timer_delta = delta < NP_DELTA_MAX ? delta : NP_DELTA_MAX;
     }
     else
     {

@@ -16,8 +16,6 @@
 
 #include <types.h>
 
-#include "assert.h"
-
 static const u8 mem_key[] =
 {
     0x3C, 0x1A, 0x80, 0x32,
@@ -68,9 +66,8 @@ uint mem_read(u32 addr, void *dst, size_t size)
     f = fopen(fn, "rb");
     if (f == NULL)
     {
-        fprintf(stderr, "error: could not read process %d\n", mem_pid);
         free(data);
-        return true;
+        eprint("could not read process %d\n", mem_pid);
     }
     fseek(f, mem_addr + (addr & 0x1FFFFFFF), SEEK_SET);
     fread(data, 1, size, f);
@@ -105,9 +102,8 @@ uint mem_write(u32 addr, const void *src, size_t size)
     f = fopen(fn, "wb");
     if (f == NULL)
     {
-        fprintf(stderr, "error: could not write process %d\n", mem_pid);
         free(data);
-        return true;
+        eprint("could not write process %d\n", mem_pid);
     }
     fseek(f, mem_addr + (addr & 0x1FFFFFFF), SEEK_SET);
     fwrite(data, 1, size, f);
@@ -164,11 +160,7 @@ static uint mem_init_pid(const char *proc)
             f = fopen(fn, "rb");
             if (f == NULL)
             {
-                fprintf(
-                    stderr, "error: /proc/%d/cmdline does not exist (?)\n",
-                    mem_pid
-                );
-                return true;
+                eprint("'%s' does not exist (?)\n", fn);
             }
             fread(cmd, 1, sizeof(cmd), f);
             fclose(f);
@@ -180,8 +172,7 @@ static uint mem_init_pid(const char *proc)
         }
     }
 #endif
-    fprintf(stderr, "error: could not find process '%s'\n", proc);
-    return true;
+    eprint("could not find process '%s'\n", proc);
 }
 
 static uint mem_init_addr(void)
@@ -203,8 +194,7 @@ static uint mem_init_addr(void)
             return false;
         }
     }
-    fprintf(stderr, "error: could not find base address\n");
-    return true;
+    eprint("could not find base address\n");
 }
 
 uint mem_init(const char *proc)

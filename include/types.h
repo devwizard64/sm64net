@@ -39,6 +39,18 @@ typedef u8 bool;
 #define unused
 #endif
 
+#define assert(c)   {if (c) {return true;}}
+
+#define wprint(...) fprintf(stderr, "warning: " __VA_ARGS__)
+#define eprint(...) {fprintf(stderr, "error: " __VA_ARGS__); return true;}
+#ifdef _DEBUG
+#define wdebug wprint
+#define edebug eprint
+#else
+#define wdebug(...)
+#define edebug(...)
+#endif
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* _TYPES_H_ */
