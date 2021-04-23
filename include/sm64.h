@@ -223,7 +223,7 @@ struct object_t
     /* 0x0070 */    u32     touch;
     /* 0x0074 */    s16     flag;
     /* 0x0076 */    s16     touch_len;
-    /* 0x0078 */    struct object_t *object_touch[4];
+    /* 0x0078 */    struct object_t *obj_touch[4];
     /* 0x0088 */    union
                     {
                         s8      s8[4];
@@ -268,7 +268,7 @@ struct player_gfx_t
     /* 0x0C */  s16     rot_torso[3];
     /* 0x12 */  s16     rot_head[3];
     /* 0x18 */  f32     pos_glove[3];
-    /* 0x24 */  struct object_t *object;
+    /* 0x24 */  struct object_t *obj;
 };  /* 0x28 */
 
 struct player_t
@@ -280,9 +280,9 @@ struct player_t
     /* 0x0C */  u32     state;
     /* 0x10 */  u32     state_prev;
     /* 0x14 */  u32     ground_sfx;
-    /* 0x18 */  s16     state_mode;
-    /* 0x1A */  u16     state_timer;
-    /* 0x1C */  u32     state_arg;
+    /* 0x18 */  s16     mode;
+    /* 0x1A */  u16     timer;
+    /* 0x1C */  u32     arg;
     /* 0x20 */  f32     stick_mag;
     /* 0x24 */  s16     stick_rot;
     /* 0x26 */  s16     invincible;
@@ -301,20 +301,20 @@ struct player_t
     /* 0x60 */  void   *wall;
     /* 0x64 */  void   *roof;
     /* 0x68 */  void   *ground;
-    /* 0x6C */  f32     height_roof;
-    /* 0x70 */  f32     height_ground;
+    /* 0x6C */  f32     y_roof;
+    /* 0x70 */  f32     y_ground;
     /* 0x74 */  s16     rot_ground;
-    /* 0x76 */  s16     height_water;
-    /* 0x78 */  struct object_t *object_touch;
-    /* 0x7C */  struct object_t *object_hold;
-    /* 0x80 */  struct object_t *object_use;
-    /* 0x84 */  struct object_t *object_ride;
-    /* 0x88 */  struct object_t *object;
-    /* 0x8C */  void   *_8C;
+    /* 0x76 */  s16     y_water;
+    /* 0x78 */  struct object_t *obj_touch;
+    /* 0x7C */  struct object_t *obj_hold;
+    /* 0x80 */  struct object_t *obj_use;
+    /* 0x84 */  struct object_t *obj_ride;
+    /* 0x88 */  struct object_t *obj;
+    /* 0x8C */  void   *link;
     /* 0x90 */  void   *world;
-    /* 0x94 */  void   *camera;
+    /* 0x94 */  void   *cam;
     /* 0x98 */  struct player_gfx_t *gfx;
-    /* 0x9C */  struct controller_t *controller;
+    /* 0x9C */  struct controller_t *cnt;
     /* 0xA0 */  struct motion_t *motion;
     /* 0xA4 */  u32     touch;
     /* 0xA8 */  s16     coin;
@@ -329,8 +329,8 @@ struct player_t
     /* 0xB5 */  u8      timer_dither;
     /* 0xB6 */  u16     timer_cap;
     /* 0xB8 */  s16     star_prev;
-    /* 0xBC */  f32     height_peak;
-    /* 0xC0 */  f32     height_sink;
+    /* 0xBC */  f32     y_peak;
+    /* 0xC0 */  f32     y_sink;
     /* 0xC4 */  f32     gravity;
 };  /* 0xC8 */
 

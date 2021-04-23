@@ -74,7 +74,7 @@
 #define /* 0x022A */    np_motion_height    tcp[0x0A].s16[1]
         /* 0x022C */
 #define /* 0x0300 */    np_gfx              sys[0x00].ptr
-#define /* 0x0304 */    np_object           sys[0x01].ptr
+#define /* 0x0304 */    np_obj              sys[0x01].ptr
 #define /* 0x0308 */    np_motion           sys[0x02].ptr
 #define /* 0x030C */    np_timer_prev       sys[0x03].u8[0]
 #define /* 0x030D */    np_timer_delta      sys[0x03].u8[1]

@@ -115,6 +115,7 @@ struct gc_t g_np_end =
     g_np_main, 1,
 };
 
+static struct object_t *net_pl_obj_hold_backup;
 static s16  net_rot_head_backup[2];
 static u8   net_cam_mode_backup;
 static bool net_boot = true;
@@ -170,20 +171,20 @@ static bool location_draw = false;
 
 static void np_update_self_location(unused struct np_t *np, struct player_t *pl)
 {
-    if (pl->controller->down & L_TRIG)
+    if (pl->cnt->down & L_TRIG)
     {
         location_draw ^= true;
     }
     if (location_draw)
     {
-        if (pl->controller->down & D_JPAD)
+        if (pl->cnt->down & D_JPAD)
         {
             if (location_start > 1)
             {
                 location_start--;
             }
         }
-        if (pl->controller->down & U_JPAD)
+        if (pl->cnt->down & U_JPAD)
         {
             if (location_start < NP_LEN)
             {
@@ -272,7 +273,7 @@ static void np_update_character(struct np_t *np, unused struct object_t *obj)
 
 static void np_update_self_character(struct np_t *np, struct player_t *pl)
 {
-    if (pl->controller->down & L_JPAD)
+    if (pl->cnt->down & L_JPAD)
     {
         if (np->np_gfx_index > 0)
         {
@@ -280,7 +281,7 @@ static void np_update_self_character(struct np_t *np, struct player_t *pl)
             np->np_tcp_id = NP_CMD_SYNC;
         }
     }
-    if (pl->controller->down & R_JPAD)
+    if (pl->cnt->down & R_JPAD)
     {
         if (np->np_gfx_index < lenof(net_character_table)-1)
         {
@@ -357,16 +358,18 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
         struct player_gfx_t *pg        = &player_gfx_table[0];
         struct player_gfx_t *pg_backup = &player_gfx_table[1];
         struct camera_t *cam = (struct camera_t *)g_camera->g.arg;
+        struct player_t *pl = player_p1;
         struct object_t *obj = g_object == &g_object_mirror ?
             object_p1 : (struct object_t *)g_object;
         if (gc->arg == 0)
         {
             struct np_t *np = obj->o_np_np;
-            *pg_backup = *pg;
-            *net_rot_head_backup = *camera_rot_head;
-            net_cam_mode_backup = cam->mode;
             if (obj != object_p1)
             {
+                *pg_backup = *pg;
+                net_pl_obj_hold_backup = pl->obj_hold;
+                *net_rot_head_backup = *camera_rot_head;
+                net_cam_mode_backup = cam->mode;
                 pg->state = 0x20810446;
                 pg->head  =  np->np_gfx_flag_h >>  6 & 0x0003;
                 pg->eye   = (np->np_gfx_flag_h >>  3 & 0x0007) + 1;
@@ -380,6 +383,7 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
                 pg->rot_torso[2] = np->np_rot_torso_z;
                 camera_rot_head[0] = np->np_rot_head_x;
                 camera_rot_head[1] = np->np_rot_head_y;
+                pl->obj_hold = NULL;
                 cam->mode = 0x06;
             }
             g_np_gfx.child =
@@ -426,6 +430,7 @@ static void *g_np_main(int mode, struct g_t *g, unused void *data)
             if (obj != object_p1)
             {
                 *pg = *pg_backup;
+                pl->obj_hold = net_pl_obj_hold_backup;
                 *camera_rot_head = *net_rot_head_backup;
                 cam->mode = net_cam_mode_backup;
             }
@@ -450,7 +455,7 @@ static void np_update_self_touch(unused struct np_t *np, struct player_t *pl)
             n->np_touch = 0;
             if (!(pl->state & 0x00020000))
             {
-                struct object_t *obj = np_table[i].np_object;
+                struct object_t *obj = np_table[i].np_obj;
                 obj->o_touch_arg = 0;
                 player_touch_attacked(pl, obj);
                 obj->o_touch_arg = 2;
@@ -468,7 +473,7 @@ static void o_np_main(void)
 #ifdef _TOUCH
     struct player_t *pl = player_p1;
 #endif
-    if (object != np->np_object)
+    if (object != np->np_obj)
     {
         object->flag = 0;
     }
@@ -585,7 +590,7 @@ static void np_init_self(struct np_t *np)
     np->np_timer      = NP_TIMEOUT;
     np->np_gfx_flag_l = NP_GFX_BODY | NP_GFX_NAME;
     np->np_gfx        = world_gfx_table[1];
-    np->np_object     = NULL;
+    np->np_obj        = NULL;
     np_init_self_character(np);
     np->np_tcp_id = NP_CMD_SYNC;
 }
@@ -594,17 +599,17 @@ static void np_init_peer(struct np_t *np)
 {
     np->np_timer      = 0;
     np->np_gfx        = world_gfx_table[1];
-    np->np_object     = NULL;
+    np->np_obj        = NULL;
     np->np_motion     = NULL;
     np->np_motion_src = -1;
 }
 
 static void np_destroy(struct np_t *np)
 {
-    if (np->np_object != NULL)
+    if (np->np_obj != NULL)
     {
-        ((struct object_t *)np->np_object)->flag = 0;
-        np->np_object = NULL;
+        ((struct object_t *)np->np_obj)->flag = 0;
+        np->np_obj = NULL;
     }
     if (np->np_motion != NULL)
     {
@@ -623,7 +628,7 @@ static void np_update(struct np_t *np, struct object_t *obj)
 static void np_update_self(struct np_t *np, struct player_t *pl)
 {
     struct player_gfx_t *pg  = pl->gfx;
-    struct object_t     *obj = pl->object;
+    struct object_t     *obj = pl->obj;
     int eye;
     if (pg == NULL || obj == NULL)
     {
@@ -687,7 +692,7 @@ static void np_update_self(struct np_t *np, struct player_t *pl)
     }
     np->np_stage = world_stage;
     np->np_world = world_index;
-    np->np_object = obj;
+    np->np_obj   = obj;
     pl->motion_height = np->np_motion_height;
     obj->g.list = &g_np;
     obj->g.motion.height = np->np_motion_height;
@@ -702,11 +707,11 @@ static void np_update_peer(struct np_t *np)
     struct object_t *obj;
     /*
     If player is not spawned, that means we currently are not in a stage.  If we
-    are not in a stage, our object ptr is stale, and should be cleared.
+    are not in a stage, our obj ptr is stale, and should be cleared.
     */
     if (object_p1 == NULL)
     {
-        np->np_object = NULL;
+        np->np_obj = NULL;
         return;
     }
     np_update_peer_location(np);
@@ -748,10 +753,10 @@ static void np_update_peer(struct np_t *np)
             }
         }
     }
-    obj = np->np_object;
+    obj = np->np_obj;
     if (obj == NULL)
     {
-        obj = np->np_object = object_create(object_p1, 0, 2, o_np);
+        obj = np->np_obj = object_create(object_p1, 0, 2, o_np);
         obj->g.rot[0] = np->np_rot_x;
         obj->g.rot[1] = np->np_rot_y;
         obj->g.rot[2] = np->np_rot_z;
