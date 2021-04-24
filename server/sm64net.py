@@ -59,7 +59,10 @@ class np:
     def write_udp(self, data):
         self.s_udp.sendto(data, (self.s_addr, NET_PORT))
     def write_tcp(self, data):
-        self.s_tcp.sendall(data)
+        try:
+            self.s_tcp.sendall(data)
+        except:
+            pass
     def write_mem(self, addr, data):
         header = struct.pack(">iII", -2, addr, len(data))
         self.write_tcp(header + (0x100-len(header))*B"\x00" + data)
@@ -126,14 +129,10 @@ class np:
 
     def update_connect(self):
         self.write_tcp(struct.pack(">I59s1x", np_table, VERSION.encode()))
-        try:
-            self.nff_write_file("dab.nff")
-            self.nff_write_file("print_font.nff")
-            self.nff_write_file("build/main.nff")
-            self.sync(False, True)
-        # connection rejected
-        except:
-            pass
+        self.nff_write_file("dab.nff")
+        self.nff_write_file("print_font.nff")
+        self.nff_write_file("build/main.nff")
+        self.sync(False, True)
     def update_tcp(self, data):
         cmd, = struct.unpack(">I", data[:4])
         if cmd in self.cmd_table:
