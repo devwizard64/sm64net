@@ -24,10 +24,10 @@ def main():
         while ui.update():
             for _ in range(sm64net.NP_LEN):
                 server.update()
-                time.sleep((1.0/60) / sm64net.NP_LEN)
+            time.sleep(1.0/60)
     finally:
-        server.destroy()
         ui.destroy()
+        server.destroy()
     return 0
 
 if __name__ == "__main__":
