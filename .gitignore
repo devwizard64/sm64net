@@ -1,4 +1,4 @@
+/donor/
 build/
 __pycache__/
 *.pyc
-*.z64

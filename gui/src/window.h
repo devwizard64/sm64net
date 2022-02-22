@@ -1,12 +1,12 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
-#ifndef _WINDOW_H_
-#define _WINDOW_H_
+#ifndef __WINDOW_H__
+#define __WINDOW_H__
 
 #include <windows.h>
 
@@ -109,7 +109,7 @@ enum
     W_B_LAUNCH,
 };
 
-struct wnd_t
+typedef struct wnd
 {
     HWND hwnd;
     LPCTSTR class;
@@ -119,11 +119,12 @@ struct wnd_t
     int y;
     int w;
     int h;
-};
+}
+WND;
 
-extern struct wnd_t wnd_table[];
+extern WND wnd_table[];
 extern LRESULT CALLBACK window_proc(
     HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam
 );
 
-#endif /* _WINDOW_H_ */
+#endif /* __WINDOW_H__ */

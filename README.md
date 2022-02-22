@@ -1,5 +1,5 @@
 # SM64Net - An Internet framework for SM64
-Copyright (C) 2019 - 2021  devwizard
+Copyright (C) 2019 - 2022  devwizard
 
 This project is licensed under the terms of the GNU General Public License
 version 2.  See `LICENSE` for more information.
@@ -32,7 +32,7 @@ Use WSL to compile the server on Windows.
 
 ### Dependencies (Server)
 * `apt install make gcc-mips-linux-gnu`
-* `pip install windows-curses`
+* `pip install windows-curses` **(Windows)**
 
 ## Client
 
@@ -51,4 +51,4 @@ Use WSL to compile the server on Windows.
 
 ### Dependencies
 * `apt install make gcc gcc-mips-linux-gnu libftdi1-dev`
-* An English SM64 ROM - Name it `UNSME0.z64` and place it in `usb/`.
+* An English SM64 ROM - Name it `UNSME0.z64` and place it in `donor/`.

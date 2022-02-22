@@ -1,6 +1,6 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
@@ -11,16 +11,16 @@
 
 .word 0x4E464600
     NFF(net_main)
-#ifdef _CHARACTER
-    NFF(net_script)
+#ifdef CHARACTER
+    NFF(net_shape)
     NFF(net_gfx)
 #endif
     NFF(net_hook)
 .word 0
 
-code_net_hook_start = 0x80248BE0
-net_hook_start:
+_net_hookSegmentStart = 0x80248BE0
+_net_hookSegmentRomStart:
     la      $4, main
     jalr    $4
     addiu   $ra, $ra, -0x0080
-net_hook_end:
+_net_hookSegmentRomEnd:

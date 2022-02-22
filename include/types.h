@@ -1,12 +1,12 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
-#ifndef _TYPES_H_
-#define _TYPES_H_
+#ifndef __TYPES_H__
+#define __TYPES_H__
 
 #define false   0
 #define true    1
@@ -29,7 +29,7 @@ typedef uint64_t u64;
 typedef float    f32;
 typedef double   f64;
 
-typedef u8 bool;
+typedef u32 PTR;
 
 #define lenof(x)        (sizeof((x)) / sizeof((x)[0]))
 
@@ -39,11 +39,11 @@ typedef u8 bool;
 #define unused
 #endif
 
-#define assert(c)   {if (c) {return true;}}
-
-#define wprint(...) fprintf(stderr, "warning: " __VA_ARGS__)
-#define eprint(...) {fprintf(stderr, "error: " __VA_ARGS__); return true;}
-#ifdef _DEBUG
+#define eexit()     exit(EXIT_FAILURE)
+#define assert(c)   {if (c) eexit();}
+#define wprint(...) {fprintf(stderr, "warning: " __VA_ARGS__);}
+#define eprint(...) {fprintf(stderr, "error: " __VA_ARGS__); eexit();}
+#ifdef __DEBUG__
 #define wdebug wprint
 #define edebug eprint
 #else
@@ -51,6 +51,10 @@ typedef u8 bool;
 #define edebug(...)
 #endif
 
+#ifdef WIN32
+#define usleep(x)   Sleep((x)/1000)
+#endif
+
 #endif /* __ASSEMBLER__ */
 
-#endif /* _TYPES_H_ */
+#endif /* __TYPES_H__ */

@@ -1,6 +1,6 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
@@ -12,17 +12,24 @@
 
 #include <types.h>
 
-#include "mem.h"
 #include "net.h"
+
+static void main_exit(void)
+{
+#ifdef WIN32
+    getchar();
+#endif
+}
 
 int main(int argc, const char **argv)
 {
     const char *proc;
     const char *addr;
     long int port;
+    atexit(main_exit);
     puts(
-        "SM64Net Client " _VERSION "." _REVISION "\n"
-        "Copyright (C) 2019 - 2021  devwizard\n"
+        "SM64Net Client " VERSION "." REVISION "\n"
+        "Copyright (C) 2019 - 2022  devwizard\n"
         "This project is licensed under the terms of the GNU General Public "
         "License\n"
         "version 2.  See LICENSE for more information.\n"
@@ -34,19 +41,10 @@ int main(int argc, const char **argv)
     }
     proc = argv[1];
     addr = argv[2];
+    errno = 0;
     port = strtol(argv[3], NULL, 0);
-    if (errno != 0)
-    {
-        fprintf(stderr, "error: invalid port\n");
-        return EXIT_FAILURE;
-    }
-    if (mem_init(proc) || net_init(addr, port, argv+4, argc-4))
-    {
-    #ifdef WIN32
-        getchar();
-    #endif
-        return EXIT_FAILURE;
-    }
-    while (!net_update());
+    if (errno != 0 || port < 1 || port > 65535) eprint("invalid port\n");
+    net_init(proc, addr, port, argv+4, argc-4);
+    while (true) net_update();
     return EXIT_SUCCESS;
 }

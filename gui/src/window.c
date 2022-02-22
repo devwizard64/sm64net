@@ -1,6 +1,6 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
@@ -16,12 +16,12 @@
 #include "window.h"
 #include "config.h"
 
-#define wnd(w, class, name, style)                                             \
-{                                                                              \
-    NULL, class, name, WS_VISIBLE | WS_CHILD | (style),                        \
-    w##_X, w##_Y, w##_W, w##_H                                                 \
+#define wnd(w, class, name, style)                      \
+{                                                       \
+    NULL, class, name, WS_VISIBLE | WS_CHILD | (style), \
+    w##_X, w##_Y, w##_W, w##_H                          \
 }
-struct wnd_t wnd_table[] =
+WND wnd_table[] =
 {
     wnd(W_S_PROC, WC_STATIC, "Emulator Name:", 0),
     wnd(W_S_ADDR, WC_STATIC, "IP Address:", 0),
@@ -46,9 +46,9 @@ struct wnd_t wnd_table[] =
     wnd(W_B_LAUNCH, WC_BUTTON, "Launch SM64Net", BS_DEFPUSHBUTTON),
 };
 
-static COLORREF window_palette[0x10] = {0};
-static HBRUSH window_brush = NULL;
-static bool window_update = false;
+static COLORREF rgbPalette[16] = {0};
+static HBRUSH hBrush = NULL;
+static u8 lock = true;
 
 static void window_error(HWND hwnd, const char *msg)
 {
@@ -95,7 +95,6 @@ static void window_macro(HWND hwnd)
 {
     MessageBox(
         hwnd,
-        "Macro character list:\n"
         "[^]\t(Up arrow)\n"
         "[v]\t(Down arrow)\n"
         "[<]\t(Left arrow)\n"
@@ -105,11 +104,11 @@ static void window_macro(HWND hwnd)
         "[C]\t(Bold C)\n"
         "[Z]\t(Bold Z)\n"
         "[R]\t(Bold R)\n"
-        "[coin]\t(Coin symbol)\n"
-        "[star]\t(Star symbol)\n"
+        "[+]\t(Coin)\n"
+        "[*]\t(Star)\n"
         "[x]\t(Multiply)\n"
         "[-]\t(Bullet)\n"
-        "[nostar]\t(No Star symbol)",
+        "[.]\t(Star outline)",
         "Macro Character List",
         MB_ICONINFORMATION | MB_OK
     );
@@ -121,7 +120,7 @@ static void window_colour(HWND hwnd)
     ZeroMemory(&cc, sizeof(cc));
     cc.lStructSize = sizeof(cc);
     cc.hwndOwner = hwnd;
-    cc.lpCustColors = (LPDWORD)window_palette;
+    cc.lpCustColors = (LPDWORD)rgbPalette;
     cc.rgbResult = RGB(
         config.colour >> 16 & 0xFF,
         config.colour >>  8 & 0xFF,
@@ -151,8 +150,8 @@ static void window_about(HWND hwnd)
 {
     MessageBox(
         hwnd,
-        "SM64Net " _VERSION "." _REVISION "\n"
-        "Copyright (C) 2019 - 2021  devwizard\n"
+        "SM64Net " VERSION "." REVISION "\n"
+        "Copyright (C) 2019 - 2022  devwizard\n"
         "\n"
         "This project is licensed under the terms of the GNU General Public "
         "License version 2.  See LICENSE for more information.\n"
@@ -164,10 +163,9 @@ static void window_about(HWND hwnd)
 
 static void window_launch(HWND hwnd)
 {
-    char args[0x8000];
+    char args[32768];
     PROCESS_INFORMATION pi;
     STARTUPINFO si;
-    uint success;
     if (config.proc[0] == 0)
     {
         window_error(hwnd, "The 'Emulator Name' field cannot be blank.");
@@ -195,10 +193,9 @@ static void window_launch(HWND hwnd)
     ZeroMemory(&pi, sizeof(pi));
     ZeroMemory(&si, sizeof(si));
     si.cb = sizeof(si);
-    success = CreateProcess(
+    if (!CreateProcess(
         NULL, args, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi
-    );
-    if (!success)
+    ))
     {
         window_error(hwnd, "SM64Net could not be launched.");
         return;
@@ -211,7 +208,7 @@ static void window_init(HWND hwnd)
 {
     RECT rect;
     NONCLIENTMETRICS ncm;
-    HFONT hfont;
+    HFONT hFont;
     uint i;
     GetWindowRect(hwnd, &rect);
     SetWindowPos(
@@ -222,26 +219,24 @@ static void window_init(HWND hwnd)
     );
     ncm.cbSize = sizeof(ncm);
     SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(ncm), &ncm, 0);
-    hfont = CreateFontIndirect(&ncm.lfMessageFont);
-    SendMessage(hwnd, WM_SETFONT, (WPARAM)hfont, MAKELPARAM(TRUE, 0));
+    hFont = CreateFontIndirect(&ncm.lfMessageFont);
+    SendMessage(hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
     for (i = 0; i < lenof(wnd_table); i++)
     {
-        struct wnd_t *w = &wnd_table[i];
+        WND *w = &wnd_table[i];
         w->hwnd = CreateWindowEx(
             0, w->class, w->name, w->style,
             w->x, w->y, w->w, w->h,
             hwnd, NULL, NULL, NULL
         );
-        SendMessage(
-            w->hwnd, WM_SETFONT, (WPARAM)hfont, MAKELPARAM(TRUE, 0)
-        );
+        SendMessage(w->hwnd, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
     }
     if (config_read())
     {
         window_about(hwnd);
         window_config_write(hwnd, true);
     }
-    window_update = false;
+    lock = true;
     SendMessage(
         wnd_table[W_E_PROC].hwnd, EM_SETLIMITTEXT, lenof(config.proc)-1, 0
     );
@@ -250,7 +245,7 @@ static void window_init(HWND hwnd)
     );
     SendMessage(wnd_table[W_E_PORT].hwnd, EM_SETLIMITTEXT, 5, 0);
     SendMessage(wnd_table[W_E_NAME].hwnd, EM_SETLIMITTEXT, 0xF8, 0);
-    window_update = true;
+    lock = false;
 }
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -272,10 +267,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             uint i;
             for (i = 0; i < lenof(wnd_table); i++)
             {
-                if ((HWND)lparam == wnd_table[i].hwnd)
-                {
-                    break;
-                }
+                if ((HWND)lparam == wnd_table[i].hwnd) break;
             }
             switch (i)
             {
@@ -283,31 +275,19 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
                 case W_E_ADDR:
                 case W_E_PORT:
                 case W_E_NAME:
-                    if (HIWORD(wparam) == EN_CHANGE && window_update)
+                    if (HIWORD(wparam) == EN_CHANGE && !lock)
                     {
-                        window_update = false;
+                        lock = true;
                         window_config_write(hwnd, i == W_E_NAME);
-                        window_update = true;
+                        lock = false;
                     }
                     break;
-                case W_B_PUNCTUATION:
-                    window_punctuation(hwnd);
-                    break;
-                case W_B_MACRO:
-                    window_macro(hwnd);
-                    break;
-                case W_B_COLOUR:
-                    window_colour(hwnd);
-                    break;
-                case W_B_HELP:
-                    window_help(hwnd);
-                    break;
-                case W_B_ABOUT:
-                    window_about(hwnd);
-                    break;
-                case W_B_LAUNCH:
-                    window_launch(hwnd);
-                    break;
+                case W_B_PUNCTUATION:   window_punctuation(hwnd);   break;
+                case W_B_MACRO:         window_macro(hwnd);         break;
+                case W_B_COLOUR:        window_colour(hwnd);        break;
+                case W_B_HELP:          window_help(hwnd);          break;
+                case W_B_ABOUT:         window_about(hwnd);         break;
+                case W_B_LAUNCH:        window_launch(hwnd);        break;
             }
             break;
         }
@@ -319,16 +299,13 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
             }
             else if ((HWND)lparam == wnd_table[W_S_COLOURPREV].hwnd)
             {
-                if (window_brush != NULL)
-                {
-                    DeleteObject(window_brush);
-                }
-                window_brush = CreateSolidBrush(RGB(
+                if (hBrush != NULL) DeleteObject(hBrush);
+                hBrush = CreateSolidBrush(RGB(
                     config.colour >> 16 & 0xFF,
                     config.colour >>  8 & 0xFF,
                     config.colour >>  0 & 0xFF
                 ));
-                return (LRESULT)window_brush;
+                return (LRESULT)hBrush;
             }
             break;
         }

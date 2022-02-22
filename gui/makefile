@@ -3,10 +3,8 @@
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
-build/main.z64:
-build/main.elf: build/UNSME0.o build/init.o build/main.o
-build/main.elf: LDFLAG := --no-check-sections
-build/main.ld:
+build/SM64NetGUI.exe: src/main.c src/window.c src/config.c
+build/SM64NetGUI.exe: CC  := i686-w64-mingw32-gcc -mwindows
+build/SM64NetGUI.exe: LIB := -lcomctl32 -lcomdlg32 -lgdi32
 
-FLAG    := -I../include
-include ../include/sm64.mk
+include ../include/native.mk

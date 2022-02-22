@@ -1,16 +1,16 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
 
-#ifndef _SM64NET_H_
-#define _SM64NET_H_
+#ifndef __SM64NET_H__
+#define __SM64NET_H__
 
 #include <types.h>
 
-#define NET_PORT                0x1100
+#define NET_PORT                4352
 
 #define NP_LEN          32
 #define NP_NAME_LEN     32
@@ -24,11 +24,11 @@
 
 #define NP_CMD_SYNC     1
 
-#define NP_GFX_BODY     0x0400
-#define NP_GFX_NAME     0x0800
+#define NP_SHAPE_BODY   0x0400
+#define NP_SHAPE_NAME   0x0800
 
-#define NM_PAGE_LEN     64
-#define NM_PAGE_SIZE    0x800
+#define NET_PAGE_LEN    64
+#define NET_PAGE_SIZE   0x800
 
 #ifndef __ASSEMBLER__
 
@@ -48,18 +48,18 @@
 #define /* 0x001C */    np_rot_x            udp[0x07].s16[0]
 #define /* 0x001E */    np_rot_y            udp[0x07].s16[1]
 #define /* 0x0020 */    np_rot_z            udp[0x08].s16[0]
-#define /* 0x0022 */    np_rot_torso        udp[0x08].s16[1]
-#define /* 0x0022 */    np_rot_torso_x      udp[0x08].s16[1]
-#define /* 0x0024 */    np_rot_torso_y      udp[0x09].s16[0]
-#define /* 0x0026 */    np_rot_torso_z      udp[0x09].s16[1]
-#define /* 0x0028 */    np_rot_head         udp[0x0A].s16[0]
-#define /* 0x0028 */    np_rot_head_x       udp[0x0A].s16[0]
-#define /* 0x002A */    np_rot_head_y       udp[0x0A].s16[1]
-#define /* 0x002C */    np_gfx_flag_h       udp[0x0B].u16[0]
-#define /* 0x002E */    np_gfx_flag_l       udp[0x0B].u16[1]
-#define /* 0x0030 */    np_motion_frame_amt udp[0x0C].s32
-#define /* 0x0034 */    np_motion_frame_vel udp[0x0D].s32
-#define /* 0x0038 */    np_motion_dst       udp[0x0E].u8[0]
+#define /* 0x0022 */    np_torso            udp[0x08].s16[1]
+#define /* 0x0022 */    np_torso_x          udp[0x08].s16[1]
+#define /* 0x0024 */    np_torso_y          udp[0x09].s16[0]
+#define /* 0x0026 */    np_torso_z          udp[0x09].s16[1]
+#define /* 0x0028 */    np_head             udp[0x0A].s16[0]
+#define /* 0x0028 */    np_head_x           udp[0x0A].s16[0]
+#define /* 0x002A */    np_head_y           udp[0x0A].s16[1]
+#define /* 0x002C */    np_shape_flag_h     udp[0x0B].u16[0]
+#define /* 0x002E */    np_shape_flag_l     udp[0x0B].u16[1]
+#define /* 0x0030 */    np_anime_frame_amt  udp[0x0C].s32
+#define /* 0x0034 */    np_anime_frame_vel  udp[0x0D].s32
+#define /* 0x0038 */    np_anime_dst        udp[0x0E].u8[0]
 #define /* 0x0039 */    np_timer            udp[0x0E].u8[1]
         /* 0x003A */
 #define /* 0x0200 */    np_tcp_id           tcp[0x00].u32
@@ -70,18 +70,18 @@
 #define /* 0x0204 */    np_colour_b         tcp[0x01].u8
 #define /* 0x0208 */    np_name             tcp[0x02].u8
 #define /* 0x0228 */    np_stage            tcp[0x0A].u8[0]
-#define /* 0x0229 */    np_world            tcp[0x0A].u8[1]
-#define /* 0x022A */    np_motion_height    tcp[0x0A].s16[1]
+#define /* 0x0229 */    np_scene            tcp[0x0A].u8[1]
+#define /* 0x022A */    np_waist            tcp[0x0A].s16[1]
         /* 0x022C */
-#define /* 0x0300 */    np_gfx              sys[0x00].ptr
+#define /* 0x0300 */    np_shape            sys[0x00].ptr
 #define /* 0x0304 */    np_obj              sys[0x01].ptr
-#define /* 0x0308 */    np_motion           sys[0x02].ptr
+#define /* 0x0308 */    np_anime            sys[0x02].ptr
 #define /* 0x030C */    np_timer_prev       sys[0x03].u8[0]
 #define /* 0x030D */    np_timer_delta      sys[0x03].u8[1]
-#define /* 0x030E */    np_motion_src       sys[0x03].u8[2]
+#define /* 0x030E */    np_anime_src        sys[0x03].u8[2]
         /* 0x030F */
 
-union np_mem_t
+typedef union np_mem
 {
     s8      s8[4];
     u8      u8[4];
@@ -90,35 +90,42 @@ union np_mem_t
     s32     s32;
     u32     u32;
     f32     f32;
-#ifdef _NATIVE
+#ifdef __NATIVE__
     u32     ptr;
 #else
     void   *ptr;
 #endif
-};
+}
+NP_MEM;
 
-struct np_t
+typedef struct net_pl
 {
-    /* 0x0000 */    union np_mem_t udp[NP_UDP_LEN];
-    /* 0x0200 */    union np_mem_t tcp[NP_TCP_LEN];
-    /* 0x0300 */    union np_mem_t sys[NP_SYS_LEN];
-};  /* 0x0400 */
+    /* 0x0000 */    NP_MEM udp[NP_UDP_LEN];
+    /* 0x0200 */    NP_MEM tcp[NP_TCP_LEN];
+    /* 0x0300 */    NP_MEM sys[NP_SYS_LEN];
+}   /* 0x0400 */
+NET_PL;
 
-#ifdef _NATIVE
-struct net_meta_t
+#ifdef __NATIVE__
+typedef struct net_meta
 {
-    /* 0x00 */  u8      np_table_b[4];
-    /* 0x04 */  char    version[60];
-};  /* 0x40 */
+    /* 0x00 */  u8      mem_addr_b[4];
+    /* 0x04 */  u8      np_table_b[4];
+    /* 0x08 */  char    version[0x40-0x08];
+}   /* 0x40 */
+NET_META;
 #define NP_TABLE        0x80000380
 #else
-extern struct np_t *np_table;
+extern NET_PL *np_table;
 #endif
 
 #else /* __ASSEMBLER__ */
 
-#define NFF(name)   .word code_##name##_start, name##_start, name##_end
+#define NFF(name)                       \
+    .word _##name##SegmentStart;        \
+    .word _##name##SegmentRomStart;     \
+    .word _##name##SegmentRomEnd
 
 #endif /* __ASSEMBLER__ */
 
-#endif /* _SM64NET_H_ */
+#endif /* __SM64NET_H__ */

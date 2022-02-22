@@ -1,5 +1,5 @@
 #                   SM64Net - An Internet framework for SM64
-#                     Copyright (C) 2019 - 2021  devwizard
+#                     Copyright (C) 2019 - 2022  devwizard
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
@@ -11,19 +11,12 @@ import importlib
 
 import sm64net
 
-s_tcp    = None
-s_udp    = None
-np_table = None
-
 def recvall(self, length):
     msg = b""
-    while length:
-        try:
-            buf = self.recv(length)
-        except:
-            return None
-        if len(buf) == 0:
-            return None
+    while length > 0:
+        try: buf = self.recv(length)
+        except: return None
+        if len(buf) == 0: return None
         msg += buf
         length -= len(buf)
     return msg
@@ -41,14 +34,13 @@ def init():
     s_udp.bind(("", sm64net.NET_PORT))
     np_table = sm64net.NP_LEN*[None]
 
-def destroy():
+def exit():
     s_tcp.shutdown(socket.SHUT_RDWR)
     s_tcp.close()
     s_udp.close()
 
 def update_connect(sock, addr):
-    with open("bans.txt", "r") as f:
-        data = f.read()
+    with open("bans.txt", "r") as f: data = f.read()
     for line in data.split("\n"):
         a, sep, msg = line.partition(" ")
         if a == addr:
@@ -62,7 +54,7 @@ def update_connect(sock, addr):
     else:
         for i, np in enumerate(np_table):
             if np == None or np.s_addr == addr:
-                np = sm64net.np(sock, s_udp, addr)
+                np = sm64net.NET_PL(sock, s_udp, addr)
                 np_table[i] = np
                 np.update_connect()
                 break
@@ -88,7 +80,5 @@ def update():
             i = sockets.index(s)
             np = np_table[i]
             if np != None:
-                if data != None:
-                    np.update_tcp(data)
-                else:
-                    np_table[i] = None
+                if data != None: np.update_tcp(data)
+                else: np_table[i] = None

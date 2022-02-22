@@ -1,6 +1,6 @@
 /******************************************************************************
  *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
+ *                    Copyright (C) 2019 - 2022  devwizard                    *
  *        This project is licensed under the terms of the GNU General         *
  *        Public License version 2.  See LICENSE for more information.        *
  ******************************************************************************/
@@ -34,11 +34,11 @@ int WINAPI WinMain(
     wc.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wc.hbrBackground  = GetSysColorBrush(COLOR_3DFACE);
     wc.lpszMenuName   = NULL;
-    wc.lpszClassName  = "SM64NETLAUNCHERCLASS";
+    wc.lpszClassName  = "SM64NETGUICLASS";
     RegisterClass(&wc);
     hwnd = CreateWindow(
         wc.lpszClassName,
-        "SM64Net Launcher",
+        "SM64Net GUI",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         0, 0, W_MAIN_W, W_MAIN_H,
         NULL, NULL, hInstance, NULL

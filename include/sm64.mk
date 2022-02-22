@@ -1,50 +1,49 @@
 #                   SM64Net - An Internet framework for SM64
-#                     Copyright (C) 2019 - 2021  devwizard
+#                     Copyright (C) 2019 - 2022  devwizard
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
-CC      := mips-linux-gnu-gcc
-LD      := mips-linux-gnu-ld
-CPP     := mips-linux-gnu-cpp
-OBJCOPY := mips-linux-gnu-objcopy
-CC      += -march=vr4300 -mfix4300 -mfp32 -mno-abicalls -mno-check-zero-division
-CC      += -fno-PIC -ffreestanding -fno-zero-initialized-in-bss -G 0
-CC      += -Wall -Wextra -Wpedantic -Os $(FLAG)
-LD      += --accept-unknown-input-arch --no-check-sections
-CPP     += -U mips $(FLAG)
-
-build/%.z64: build/%.elf build/crc
-	@$(OBJCOPY) -O binary $< $@
-	@build/crc $@
-
-build/%.nff: build/%.elf
-	@$(OBJCOPY) -O binary $< $@
-
-build/%.elf: build/%.ld
-	@$(LD) -Map $(@:.elf=.map) -o $@ -T $^
-
-build/%.ld: %.ld | build
-	@$(CPP) -P -o $@ $<
-
-build/%.ld.o:
-	@$(LD) -r -o $@ $^
-
-build/%.o: %.c | build
-	@$(CC) -c -o $@ $<
-
-build/%.o: %.S | build
-	@$(CC) -c -o $@ $<
-
-build/%.o: %.z64 | build
-	@$(OBJCOPY) -O elf32-tradbigmips -I binary $< $@
-
-build/crc: crc.c
-	@cc -O2 -o $@ $<
-
-build:
-	@mkdir -p $@
-
-clean:
-	@rm -rf build
+CROSS   := mips-linux-gnu-
+CC      := $(CROSS)gcc
+LD      := $(CROSS)ld
+CPP     := $(CROSS)cpp
+OBJCOPY := $(CROSS)objcopy
+ARCH    := -mabi=32 -march=vr4300 -mfix4300 -mno-abicalls -fno-PIC -G 0
+WFLAG   := -Wall -Wextra -Wpedantic -Werror-implicit-function-declaration
+CCFLAG  := $(ARCH) -mno-check-zero-division -ffreestanding
+CCFLAG  += -fno-common -fno-zero-initialized-in-bss -fno-toplevel-reorder
+CCFLAG  += $(FLAG) -Os $(WFLAG)
+LDFLAG  :=
+CPPFLAG := $(FLAG) -Umips
 
 .PHONY: clean
+clean:
+	rm -rf build
+
+build/%.z64: build/%.elf build/crc | build
+	$(OBJCOPY) -O binary $< $@
+	build/crc $@
+
+build/%.nff: build/%.elf | build
+	$(OBJCOPY) -O binary $< $@
+
+build/%.elf: build/%.ld | build
+	$(LD) $(LDFLAG) -Map $(@:.elf=.map) -o $@ -T $^
+
+build/%.ld: %.ld | build
+	$(CPP) $(CPPFLAG) -P -o $@ $<
+
+build/%.ld.o: | build
+	$(LD) -r -o $@ $^
+
+build/%.o: %.c | build
+	$(CC) $(CCFLAG) -c -o $@ $<
+
+build/%.o: %.S | build
+	$(CC) $(CCFLAG) -c -o $@ $<
+
+build/crc: crc.c | build
+	cc -Wall -Wextra -Wpedantic -O2 -s -o $@ $<
+
+build:
+	mkdir -p $@
