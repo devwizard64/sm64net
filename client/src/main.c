@@ -21,7 +21,7 @@ static void main_exit(void)
 #endif
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char *argv[])
 {
     const char *proc;
     const char *addr;
@@ -44,7 +44,7 @@ int main(int argc, const char **argv)
     errno = 0;
     port = strtol(argv[3], NULL, 0);
     if (errno != 0 || port < 1 || port > 65535) eprint("invalid port\n");
-    net_init(proc, addr, port, argv+4, argc-4);
+    net_init(proc, addr, port, argc-4, argv+4);
     while (true) net_update();
     return EXIT_SUCCESS;
 }

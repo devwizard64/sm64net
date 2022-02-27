@@ -9,10 +9,9 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 typedef unsigned int uint;
-typedef uint8_t  u8;
+typedef uint8_t u8;
 typedef uint32_t u32;
 
 static void crc(char *buf, const u8 *data, uint size)
@@ -55,7 +54,7 @@ static void crc(char *buf, const u8 *data, uint size)
     buf[7] = c1 >>  0;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, char *argv[])
 {
     FILE *f;
     u8 *data;

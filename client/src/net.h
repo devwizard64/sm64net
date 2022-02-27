@@ -11,8 +11,7 @@
 #include <types.h>
 
 extern void net_init(
-    const char *proc, const char *addr, int port,
-    const char **argv, int argc
+    const char *proc, const char *addr, int port, int argc, char *argv[]
 );
 extern void net_update(void);
 

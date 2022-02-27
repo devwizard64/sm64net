@@ -12,7 +12,7 @@ CCFLAG  += -D__NATIVE__ -Wall -Wextra -Wpedantic -O2
 
 .PHONY: clean
 clean:
-	rm -rf build
+	rm -f -r build
 
 build/%: | build
 	$(CC) $(CCFLAG) -s -o $@ $^ $(LIB)

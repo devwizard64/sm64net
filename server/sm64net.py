@@ -9,8 +9,11 @@ VERSION         = "2.2"
 REVISION        = "0"
 VERSION_STR     = "SM64Net Server " + VERSION+"."+REVISION
 
+osException     = 0x80327650
+
 NET_PORT        = 4352
 
+NP_DATA         = 0x80025C00
 NP_LEN          = 32
 NP_NAME_LEN     = 32
 NP_UDP_SIZE     = 0x200
@@ -22,9 +25,6 @@ NP_CMD_COL      = 2
 
 np_name         = 0x0008
 np_col          = 0x002D
-
-osException     = 0x80327650
-np_table        = 0x80025C00
 
 import server
 
@@ -120,7 +120,7 @@ class NET_PL:
 
     def update_connect(self):
         self.write_tcp(struct.pack(">II55s1x",
-            osException, np_table, VERSION.encode()
+            osException, NP_DATA, VERSION.encode()
         ))
         self.nff_write_file("save.nff")
         self.nff_write_file("dab.nff")

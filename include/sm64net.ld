@@ -8,4 +8,4 @@
 #define __ASSEMBLER__
 #include <sm64net.h>
 
-np_table = 0x80000380;
+np_table = NP_TABLE;

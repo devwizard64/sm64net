@@ -40,7 +40,8 @@
 static u32 usb_cmd[4];
 static OSMesgQueue usb_mq;
 static OSMesg usb_msg[1];
-static const char *volatile usb_status;
+static const char *status_str;
+static u8 status_count;
 
 static void usb_dma(u32 cart, void *dram, size_t size, int direction)
 {
@@ -73,7 +74,6 @@ static int usb_busy(void)
 static int usb_rd(void *data, size_t size)
 {
     u8 *addr = data;
-    osInvalDCache(data, size);
     while (size > 0)
     {
         uint siz = size < 0x200 ? size : 0x200;
@@ -91,7 +91,6 @@ static int usb_rd(void *data, size_t size)
 static int usb_wr(void *data, size_t size)
 {
     u8 *addr = data;
-    osWritebackDCache(data, size);
     REG(REG_USB_CFG) = USB_CMD_WR_NOP;
     while (size > 0)
     {
@@ -119,39 +118,40 @@ void usb_init(void)
         REG(REG_USB_CFG) = USB_CMD_RD;
         if (usb_busy()) break;
     }
-    usb_status = NULL;
+    status_count = 0;
     osCreateMesgQueue(&usb_mq, usb_msg, lenof(usb_msg));
+}
+
+#define usb_status(str) \
+{                       \
+    status_str   = str; \
+    status_count = 16;  \
+    return;             \
 }
 
 void usb_update(void)
 {
     while (usb_can_rd())
     {
-        if (usb_rd(usb_cmd, sizeof(usb_cmd)))
-        {
-            usb_status = "TOUTCMD";
-            return;
-        }
+        void *addr;
+        size_t size;
+        osInvalDCache(usb_cmd, sizeof(usb_cmd));
+        if (usb_rd(usb_cmd, sizeof(usb_cmd))) usb_status("TOUTCMD");
+        addr = (void *)usb_cmd[1];
+        size = usb_cmd[2];
         switch (usb_cmd[0])
         {
             case 0x6E657452:
-                if (usb_wr((void *)usb_cmd[1], usb_cmd[2]))
-                {
-                    usb_status = "TOUTWR";
-                    return;
-                }
+                osWritebackDCache(addr, size);
+                if (usb_wr(addr, size)) usb_status("TOUTWR");
                 break;
             case 0x6E657457:
-                osInvalICache((void *)usb_cmd[1], usb_cmd[2]);
-                if (usb_rd((void *)usb_cmd[1], usb_cmd[2]))
-                {
-                    usb_status = "TOUTRD";
-                    return;
-                }
+                osWritebackDCache(addr, size);
+                if (usb_rd(addr, size)) usb_status("TOUTRD");
+                osInvalICache(addr, size);
                 break;
             default:
-                usb_status = "ILLCMD";
-                return;
+                usb_status("ILLCMD");
                 break;
         }
     }
@@ -159,7 +159,9 @@ void usb_update(void)
 
 void usb_draw(void)
 {
-    const char *str = usb_status;
-    usb_status = NULL;
-    if (str != NULL) dprint(20, 20, str);
+    if (status_count > 0)
+    {
+        status_count--;
+        dprint(20, 20, status_str);
+    }
 }

@@ -112,15 +112,14 @@ static void nff_write(const char *path)
         PTR end   = W(0x0C);
         b += 0x0C;
         if (addr == 0) break;
-        if (addr == (u32)-1) addr = np_table;
+        if (addr == (PTR)-1) addr = np_table;
         mem_write(addr, data+start, end-start);
     }
     free(data);
 }
 
 void net_init(
-    const char *proc, const char *addr, int port,
-    const char **argv, int argc
+    const char *proc, const char *addr, int port, int argc, char *argv[]
 )
 {
     NET_META meta;
@@ -169,8 +168,8 @@ void net_init(
         eprint("server is version %s\n", meta.version);
     }
     mem_init(proc, np_u32(meta.mem_addr));
-    mem_write(NP_TABLE, meta.np_table_b, sizeof(meta.np_table_b));
-    np_table = np_u32(meta.np_table);
+    mem_write(NP_TABLE, meta.np_data_b, sizeof(meta.np_data_b));
+    np_table = np_u32(meta.np_data);
     while (argc-- > 0) nff_write(*argv++);
     puts("Connected.");
 }

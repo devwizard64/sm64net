@@ -18,7 +18,7 @@ CPPFLAG := $(FLAG) -Umips
 
 .PHONY: clean
 clean:
-	rm -rf build
+	rm -f -r build
 
 build/%.z64: build/%.elf build/crc | build
 	$(OBJCOPY) -O binary $< $@
@@ -39,11 +39,11 @@ build/%.ld.o: | build
 build/%.o: %.c | build
 	$(CC) $(CCFLAG) -c -o $@ $<
 
-build/%.o: %.S | build
+build/%.o: %.sx | build
 	$(CC) $(CCFLAG) -c -o $@ $<
 
 build/crc: crc.c | build
-	cc -Wall -Wextra -Wpedantic -O2 -s -o $@ $<
+	cc -O2 -Wall -Wextra -Wpedantic -s -o $@ $<
 
 build:
 	mkdir -p $@

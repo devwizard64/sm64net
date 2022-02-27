@@ -12,14 +12,14 @@ import importlib
 import sm64net
 
 def recvall(self, length):
-    msg = b""
+    buf = B""
     while length > 0:
-        try: buf = self.recv(length)
+        try: x = self.recv(length)
         except: return None
-        if len(buf) == 0: return None
-        msg += buf
-        length -= len(buf)
-    return msg
+        if len(x) == 0: return None
+        buf += x
+        length -= len(x)
+    return buf
 
 def init():
     global s_tcp
@@ -28,7 +28,7 @@ def init():
     s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s_tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s_tcp.bind(("", sm64net.NET_PORT))
-    s_tcp.listen(5)
+    s_tcp.listen(sm64net.NP_LEN)
     s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s_udp.bind(("", sm64net.NET_PORT))
@@ -40,7 +40,7 @@ def exit():
     s_udp.close()
 
 def update_connect(sock, addr):
-    with open("bans.txt", "r") as f: data = f.read()
+    with open("ban.txt", "r") as f: data = f.read()
     for line in data.split("\n"):
         a, sep, msg = line.partition(" ")
         if a == addr:

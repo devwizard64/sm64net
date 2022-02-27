@@ -10,8 +10,9 @@
 
 #include <types.h>
 
-#define NET_PORT                4352
+#define NET_PORT        4352
 
+#define NP_TABLE        0x80000380
 #define NP_LEN          32
 #define NP_NAME_LEN     32
 #define NP_UDP_LEN      0x80
@@ -110,11 +111,10 @@ NET_PL;
 typedef struct net_meta
 {
     /* 0x00 */  u8      mem_addr_b[4];
-    /* 0x04 */  u8      np_table_b[4];
+    /* 0x04 */  u8      np_data_b[4];
     /* 0x08 */  char    version[0x40-0x08];
 }   /* 0x40 */
 NET_META;
-#define NP_TABLE        0x80000380
 #else
 extern NET_PL *np_table;
 #endif
