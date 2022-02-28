@@ -6,8 +6,9 @@
 build/main.nff:
 build/main.elf:     build/nff.o build/main.o build/gfx.ld.o build/shape.ld.o
 build/main.ld:
-build/gfx.ld.o:     kirby_gfx.o   meta_gfx.o   hrdee_gfx.o
-build/shape.ld.o:   kirby_shape.o meta_shape.o hrdee_shape.o
+build/main.o:       $(wildcard src/*.c)
+build/gfx.ld.o:     src/kirby_gfx.o   src/meta_gfx.o   src/hrdee_gfx.o
+build/shape.ld.o:   src/kirby_shape.o src/meta_shape.o src/hrdee_shape.o
 
 FLAG    := -I../include -DLOCATION -DCHARACTER -DCOLLISION
 include ../include/sm64.mk

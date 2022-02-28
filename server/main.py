@@ -22,7 +22,7 @@ def main():
     ui.init()
     try:
         while ui.update():
-            for _ in range(sm64net.NP_LEN): server.update()
+            server.update()
             time.sleep(1.0/60)
     finally:
         ui.exit()

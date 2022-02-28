@@ -176,7 +176,6 @@ void net_init(
 
 void net_update(void)
 {
-    uint i;
     NET_PL np;
     memset(np.sys, 0x00, sizeof(np.sys));
     mem_read(np_table, &np, sizeof(np.udp)+sizeof(np.tcp));
@@ -192,7 +191,7 @@ void net_update(void)
         s_udp, (void *)np.udp, sizeof(np.udp), 0,
         (struct sockaddr *)&udp_addr, sizeof(udp_addr)
     ), "sendto() failed");
-    for (i = 0; i < NP_LEN-1; i++)
+    while (true)
     {
         /* check for nonblocking read */
         struct pollfd pollfds[2];

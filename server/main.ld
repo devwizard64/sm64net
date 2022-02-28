@@ -36,6 +36,7 @@ SECTIONS
         ,
         DATA(build/shape.ld.o)
         ,
+        BSS(build/shape.ld.o)
     )
     ASSERT(. <= NET_HEAP_END, "error: NET_SHAPE exceeds memory size.")
     SECTION(NET_GFX_START, net_gfx,
