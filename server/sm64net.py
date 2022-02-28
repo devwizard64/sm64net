@@ -6,7 +6,7 @@
 import struct
 
 VERSION         = "2.2"
-REVISION        = "0"
+REVISION        = "1"
 VERSION_STR     = "SM64Net Server " + VERSION+"."+REVISION
 
 osException     = 0x80327650

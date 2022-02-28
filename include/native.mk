@@ -4,7 +4,7 @@
 #         Public License version 2.  See LICENSE for more information.
 
 VERSION     := 2.2
-REVISION    := 0
+REVISION    := 1
 
 CC      := cc
 CCFLAG  := -I../include -DVERSION=\"$(VERSION)\" -DREVISION=\"$(REVISION)\"
