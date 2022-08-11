@@ -3,13 +3,21 @@
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
-build/sm64net: src/main.c src/net.c src/mem.c
+.PHONY: default
+default: bin/sm64net bin/sm64net.exe bin/sm64net_usb
 
-build/sm64net.exe: src/main.c src/net.c src/mem.c
-build/sm64net.exe: CC  := i686-w64-mingw32-gcc -mconsole -D_WIN32_WINNT=0x0600
-build/sm64net.exe: LIB := -lws2_32
+include ../include/sm64net.mk
 
-build/sm64net_usb: src/main.c src/net.c src/mem_usb.c
-build/sm64net_usb: LIB := -lftdi
+W32_ARCH    := -mconsole -D_WIN32_WINNT=0x0600
 
-include ../include/native.mk
+bin/sm64net: src/main.c src/memory.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CCFLAG) -s -o $@ $^
+
+bin/sm64net.exe: src/main.c src/memory.c
+	@mkdir -p $(dir $@)
+	$(W32_CC) $(W32_CCFLAG) -s -o $@ $^ -lws2_32
+
+bin/sm64net_usb: src/main.c src/memory_usb.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CCFLAG) -s -o $@ $^ -lftdi

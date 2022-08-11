@@ -1,4 +1,6 @@
 /donor/
+bin/
 build/
 __pycache__/
 *.pyc
+/server/save.bin

@@ -1,0 +1,111 @@
+/******************************************************************************/
+/*                  SM64Net - An Internet framework for SM64                  */
+/*                    Copyright (C) 2019 - 2022  devwizard                    */
+/*        This project is licensed under the terms of the GNU General         */
+/*        Public License version 2.  See LICENSE for more information.        */
+/******************************************************************************/
+
+#include <sm64net.h>
+
+.set noreorder
+
+.word 0x4E464600
+    NFF(net_main)
+#ifdef CHARACTER
+    NFF(net_shape)
+    NFF(net_gfx)
+#endif
+    NFF(net_hook)
+#ifdef SAVE
+    NFF(net_save_datawr)
+    NFF(net_save_filewr)
+    NFF(net_save_erase)
+    NFF(net_save_copy)
+    NFF(net_save_reset)
+    NFF(net_save_coinset)
+    NFF(net_save_flagset)
+    NFF(net_save_flagclr)
+    NFF(net_save_starset)
+    NFF(net_save_cannonset)
+#endif
+.word 0
+
+_net_hookSegmentStart = 0x80248BE0
+_net_hookSegmentRomStart:
+    la      $t9, net_main
+    jal     $t9
+    subu    $ra, 4*32
+_net_hookSegmentRomEnd:
+
+#ifdef SAVE
+
+_net_save_datawrSegmentStart    = 0x802794A0
+_net_save_filewrSegmentStart    = 0x80279840
+_net_save_eraseSegmentStart     = 0x802798FC
+_net_save_copySegmentStart      = 0x80279960
+_net_save_resetSegmentStart     = 0x80279BC8
+_net_save_coinsetSegmentStart   = 0x80279D24
+_net_save_flagsetSegmentStart   = 0x8027A0A8
+_net_save_flagclrSegmentStart   = 0x8027A0F4
+_net_save_starsetSegmentStart   = 0x8027A23C
+_net_save_cannonsetSegmentStart = 0x8027A390
+
+_net_save_datawrSegmentRomStart:
+_net_save_filewrSegmentRomStart:
+_net_save_resetSegmentRomStart:
+    j       $ra
+    nop
+_net_save_datawrSegmentRomEnd:
+_net_save_filewrSegmentRomEnd:
+_net_save_resetSegmentRomEnd:
+
+_net_save_eraseSegmentRomStart:
+    la      $t9, net_save_erase
+    j       $t9
+    nop
+_net_save_eraseSegmentRomEnd:
+
+_net_save_copySegmentRomStart:
+    la      $t9, net_save_copy
+    j       $t9
+    nop
+_net_save_copySegmentRomEnd:
+
+_net_save_coinsetSegmentRomStart:
+    lw      $a0, 0x0034($sp)
+    lw      $a1, 0x0030($sp)
+    lh      $a2, 0x003A($sp)
+    la      $t9, net_save_coin_set
+    jal     $t9
+    addu    $ra, 4*6
+_net_save_coinsetSegmentRomEnd:
+
+_net_save_flagsetSegmentRomStart:
+    move    $a1, $a0
+    lh      $a0, save_index
+    la      $t9, net_save_flag_set
+    j       $t9
+    subu    $a0, 1
+_net_save_flagsetSegmentRomEnd:
+
+_net_save_flagclrSegmentRomStart:
+    move    $a1, $a0
+    lh      $a0, save_index
+    la      $t9, net_save_flag_clr
+    j       $t9
+    subu    $a0, 1
+_net_save_flagclrSegmentRomEnd:
+
+_net_save_cannonsetSegmentRomStart:
+    lh      $a0, save_index
+    subu    $a0, 1
+    lh      $a1, course_index
+    li      $a2, 0x80
+_net_save_starsetSegmentRomStart:
+    la      $t9, net_save_star_set
+    j       $t9
+    nop
+_net_save_starsetSegmentRomEnd:
+_net_save_cannonsetSegmentRomEnd:
+
+#endif

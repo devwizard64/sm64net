@@ -3,10 +3,12 @@
 #         This project is licensed under the terms of the GNU General
 #         Public License version 2.  See LICENSE for more information.
 
-build/main.z64:
-build/main.elf: build/UNSME0.o build/init.o build/main.o
-build/main.elf: LDFLAG := --no-check-sections
-build/main.ld:
+.PHONY: default
+default: build/main.z64
 
-FLAG    := -I../include
-include ../include/sm64.mk
+include ../include/sm64net.mk
+
+build/main.z64:
+build/main.elf: build/src/image.o build/src/init.o build/src/main.o
+build/main.elf: U64_LDFLAG := --no-check-sections
+build/main.ld:

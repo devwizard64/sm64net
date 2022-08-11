@@ -24,6 +24,7 @@ def recvall(self, length):
 def init():
     global s_tcp
     global s_udp
+    global save
     global np_table
     s_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s_tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -32,6 +33,7 @@ def init():
     s_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s_udp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s_udp.bind(("", sm64net.NET_PORT))
+    save = sm64net.SAVE("save.bin")
     np_table = sm64net.NP_LEN*[None]
 
 def exit():
@@ -47,7 +49,7 @@ def update_connect(sock, addr):
             if msg != "":
                 data = struct.pack(">i", -1) + msg.encode()
                 data = data[:sm64net.NP_TCP_SIZE]
-                data += B"\x00" * (sm64net.NP_TCP_SIZE-len(data))
+                data += B"\0" * (sm64net.NP_TCP_SIZE-len(data))
                 sock.sendall(data)
             sock.close()
             break

@@ -1,9 +1,9 @@
-/******************************************************************************
- *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
- *        This project is licensed under the terms of the GNU General         *
- *        Public License version 2.  See LICENSE for more information.        *
- ******************************************************************************/
+/******************************************************************************/
+/*                  SM64Net - An Internet framework for SM64                  */
+/*                    Copyright (C) 2019 - 2021  devwizard                    */
+/*        This project is licensed under the terms of the GNU General         */
+/*        Public License version 2.  See LICENSE for more information.        */
+/******************************************************************************/
 
 static void np_main(void)
 {
@@ -17,12 +17,13 @@ static void np_main(void)
         mario->pos[1] < object->o_pos_y+160 &&
         object->o_pos_y < mario->pos[1]+160
     ) pl_collision_bound(mario, object, -5);
-    if ((object->o_colflag & 0xFF) != 0)
+    if ((object->o_col_flag & 0xFF) != 0)
     {
-        np_table[0].np_col    = np-np_table;
-        np_table[0].np_tcp_id = NP_CMD_COL;
+        while (np_data[0].np_tcp_id != 0);
+        np_data[0].np_col    = np-np_data;
+        np_data[0].np_tcp_id = NP_CMD_COL;
     }
-    object->o_colflag = 0;
+    object->o_col_flag = 0;
 #endif
 }
 

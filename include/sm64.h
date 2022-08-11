@@ -1,44 +1,37 @@
-/******************************************************************************
- *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2022  devwizard                    *
- *        This project is licensed under the terms of the GNU General         *
- *        Public License version 2.  See LICENSE for more information.        *
- ******************************************************************************/
+/******************************************************************************/
+/*                  SM64Net - An Internet framework for SM64                  */
+/*                    Copyright (C) 2019 - 2022  devwizard                    */
+/*        This project is licensed under the terms of the GNU General         */
+/*        Public License version 2.  See LICENSE for more information.        */
+/******************************************************************************/
 
 #ifndef __SM64_H__
 #define __SM64_H__
 
-#include <types.h>
+#include <ultra64.h>
 
-#define OS_MESG_NOBLOCK         0
-#define OS_MESG_BLOCK           1
+typedef unsigned int uint;
+typedef s16 VECS[3];
+typedef f32 VECF[3];
+typedef f32 MTXF[4][4];
 
-#define OS_READ                 0
-#define OS_WRITE                1
-#define OS_MESG_PRI_NORMAL      0
-#define OS_MESG_PRI_HIGH        1
+typedef int SHORT;
 
-#define A_BUTTON        0x8000
-#define B_BUTTON        0x4000
-#define Z_TRIG          0x2000
-#define START_BUTTON    0x1000
-#define U_JPAD          0x0800
-#define D_JPAD          0x0400
-#define L_JPAD          0x0200
-#define R_JPAD          0x0100
-#define L_TRIG          0x0020
-#define R_TRIG          0x0010
-#define U_CBUTTONS      0x0008
-#define D_CBUTTONS      0x0004
-#define L_CBUTTONS      0x0002
-#define R_CBUTTONS      0x0001
+#ifdef __GNUC__
+#define UNUSED                  __attribute__((unused))
+#else
+#define UNUSED
+#endif
+#define lenof(x)                (sizeof((x)) / sizeof((x)[0]))
 
-#define S_TYPE_EMPTY            0x000A
-#define S_TYPE_BILLBOARD        0x001A
-#define S_TYPE_SCALE            0x001C
-#define S_TYPE_CALLBACK         0x012A
+#define S_TYPE_EMPTY            (10)
+#define S_TYPE_BILLBOARD        (26)
+#define S_TYPE_SCALE            (28)
+#define S_TYPE_CALLBACK         (42 | 0x100)
 
-#define S_FLAG_ENABLED          0x0001
+#define S_FLAG_ACTIVE           0x0001
+
+#define S_CODE_DRAW             1
 
 #define S_LAYER_BACKGROUND      0
 #define S_LAYER_OPA_SURF        1
@@ -56,6 +49,10 @@
 #define COLLISION_KNOCK     5
 #define COLLISION_BUMP      6
 
+#define PL_WAIT_39              0x0C000227
+#define PL_JUMP_6               0x20810446
+#define PL_DEMO_2               0x00001302
+
 #define PL_EYE_BLINK        0
 #define PL_EYE_OPEN         1
 #define PL_EYE_HALF         2
@@ -71,50 +68,19 @@
 #define PL_CAP_METAL        2
 #define PL_CAP_VANISH_METAL 3
 
-#ifndef __ASSEMBLER__
+#define O_MEM_POS_X             6
+#define O_MEM_POS_Y             7
+#define O_MEM_POS_Z             8
+#define O_MEM_COL_FLAG          43
+#define O_MEM_COL_ARG           66
 
-#define K0_TO_K1(x)     ((u32)(x)|0xA0000000)
-#define K1_TO_K0(x)     ((u32)(x)&0x9FFFFFFF)
-#define K0_TO_PHYS(x)   ((u32)(x)&0x1FFFFFFF)
-#define K1_TO_PHYS(x)   ((u32)(x)&0x1FFFFFFF)
-#define KDM_TO_PHYS(x)  ((u32)(x)&0x1FFFFFFF)
-#define PHYS_TO_K0(x)   ((u32)(x)|0x80000000)
-#define PHYS_TO_K1(x)   ((u32)(x)|0xA0000000)
+#define /* 0x0A0 */ o_pos_x             mem[O_MEM_POS_X].f32
+#define /* 0x0A4 */ o_pos_y             mem[O_MEM_POS_Y].f32
+#define /* 0x0A8 */ o_pos_z             mem[O_MEM_POS_Z].f32
+#define /* 0x134 */ o_col_flag          mem[O_MEM_COL_FLAG].s32
+#define /* 0x190 */ o_col_arg           mem[O_MEM_COL_ARG].s32
 
-#define /* 0x00A0 */    o_pos_x         mem[ 6].f32
-#define /* 0x00A4 */    o_pos_y         mem[ 7].f32
-#define /* 0x00A8 */    o_pos_z         mem[ 8].f32
-#define /* 0x0134 */    o_colflag       mem[43].u32
-#define /* 0x0190 */    o_colarg        mem[66].u32
-
-typedef void *OSMesg;
-typedef struct
-{
-    void *_[5];
-}
-OSMesgQueue;
-
-typedef struct
-{
-    void *_[5];
-}
-OSIoMesg;
-
-typedef union
-{
-    struct
-    {
-        u32 w0;
-        u32 w1;
-    }
-    w;
-    u64 d;
-}
-Gfx;
-
-typedef s16 vecs[3];
-typedef f32 vecf[3];
-typedef f32 mtxf[4][4];
+#define save_file_star_total(file)  save_file_star_range(file, 0, 24)
 
 typedef struct controller
 {
@@ -125,24 +91,24 @@ typedef struct controller
     /* 0x0C */  f32     d;
     /* 0x10 */  u16     held;
     /* 0x12 */  u16     down;
-    /* 0x14 */  void   *status;
-    /* 0x18 */  void   *pad;
+    /* 0x14 */  OSContStatus *status;
+    /* 0x18 */  OSContPad *pad;
 }   /* 0x1C */
 CONTROLLER;
 
 typedef struct arena
 {
-    /* 0x00 */  size_t  size;
-    /* 0x04 */  size_t  used;
-    /* 0x08 */  u8     *start;
-    /* 0x0C */  u8     *free;
+    /* 0x00 */  long    size;
+    /* 0x04 */  long    used;
+    /* 0x08 */  char   *start;
+    /* 0x0C */  char   *free;
 }   /* 0x10 */
 ARENA;
 
 typedef struct file_table
 {
     /* 0x00 */  uint    len;
-    /* 0x04 */  u8     *src;
+    /* 0x04 */  const char *src;
     /* 0x08 */  struct
                 {
                     /* 0x00 */  uint    start;
@@ -154,9 +120,9 @@ FILE_TABLE;
 
 typedef struct file
 {
-    /* 0x00 */  struct file_table *table;
-    /* 0x04 */  u8     *src;
-    /* 0x08 */  u8     *buf;
+    /* 0x00 */  FILE_TABLE *table;
+    /* 0x04 */  const char *src;
+    /* 0x08 */  char   *buf;
 }   /* 0x0C */
 FILE;
 
@@ -187,7 +153,7 @@ typedef struct skeleton
 {
     /* 0x00 */  s16     index;
     /* 0x02 */  s16     waist;
-    /* 0x04 */  struct anime *anime;
+    /* 0x04 */  ANIME  *anime;
     /* 0x08 */  s16     frame;
     /* 0x0A */  u16     timer;
     /* 0x0C */  s32     frame_amt;
@@ -209,21 +175,10 @@ SHAPE;
 typedef struct shape_callback
 {
     /* 0x00 */  SHAPE   s;
-    /* 0x14 */  void *(*callback)(int mode, struct shape *shape, void *data);
+    /* 0x14 */  void *(*callback)(int code, SHAPE *shape, void *data);
     /* 0x18 */  int     arg;
 }   /* 0x1C */
 SHAPE_CALLBACK;
-
-typedef struct shape_camera
-{
-    /* 0x00 */  SHAPE_CALLBACK s;
-    /* 0x1C */  vecf    eye;
-    /* 0x28 */  vecf    look;
-    /* 0x34 */  mtxf   *mf;
-    /* 0x38 */  s16     rz_m;
-    /* 0x3A */  s16     rz_p;
-}   /* 0x3C */
-SHAPE_CAMERA;
 
 typedef struct shape_gfx
 {
@@ -232,12 +187,16 @@ typedef struct shape_gfx
 }   /* 0x18 */
 SHAPE_GFX;
 
-typedef struct shape_billboard
+typedef struct shape_camera
 {
-    /* 0x00 */  SHAPE_GFX s;
-    /* 0x18 */  vecs    pos;
-}   /* 0x1E */
-SHAPE_BILLBOARD;
+    /* 0x00 */  SHAPE_CALLBACK s;
+    /* 0x1C */  VECF    eye;
+    /* 0x28 */  VECF    look;
+    /* 0x34 */  MTXF   *mf;
+    /* 0x38 */  s16     rz_m;
+    /* 0x3A */  s16     rz_p;
+}   /* 0x3C */
+SHAPE_CAMERA;
 
 typedef struct shape_scale
 {
@@ -246,19 +205,26 @@ typedef struct shape_scale
 }   /* 0x1C */
 SHAPE_SCALE;
 
+typedef struct shape_billboard
+{
+    /* 0x00 */  SHAPE_GFX s;
+    /* 0x18 */  VECS    pos;
+}   /* 0x1E */
+SHAPE_BILLBOARD;
+
 typedef struct shape_object
 {
     /* 0x00 */  SHAPE   s;
-    /* 0x14 */  struct shape *list;
+    /* 0x14 */  SHAPE  *shape;
     /* 0x18 */  s8      scene;
-    /* 0x19 */  s8      shape;
-    /* 0x1A */  vecs    rot;
-    /* 0x20 */  vecf    pos;
-    /* 0x2C */  vecf    scale;
+    /* 0x19 */  s8      group;
+    /* 0x1A */  VECS    rot;
+    /* 0x20 */  VECF    pos;
+    /* 0x2C */  VECF    scale;
     /* 0x38 */  SKELETON skeleton;
-    /* 0x4C */  void   *_4C;
-    /* 0x50 */  mtxf   *mf;
-    /* 0x54 */  vecf    view;
+    /* 0x4C */  struct spawn *spawn;
+    /* 0x50 */  MTXF   *mf;
+    /* 0x54 */  VECF    view;
 }   /* 0x60 */
 SHAPE_OBJECT;
 
@@ -304,9 +270,9 @@ typedef struct object
     /* 0x208 */ f32     col_offset;
     /* 0x20C */ const O_SCRIPT *script;
     /* 0x210 */ struct object *_210;
-    /* 0x214 */ struct object *_214;
+    /* 0x214 */ struct object *obj_ground;
     /* 0x218 */ s16    *_218;
-    /* 0x21C */ mtxf    mf;
+    /* 0x21C */ MTXF    mf;
     /* 0x25C */ void   *_25C;
 }   /* 0x260 */
 OBJECT;
@@ -321,9 +287,9 @@ typedef struct pl_shape
     /* 0x08 */  s16     cap;
     /* 0x0A */  s8      hold;
     /* 0x0B */  u8      punch;
-    /* 0x0C */  vecs    torso;
-    /* 0x12 */  vecs    neck;
-    /* 0x18 */  vecf    hand;
+    /* 0x0C */  VECS    torso;
+    /* 0x12 */  VECS    neck;
+    /* 0x18 */  VECF    hand;
     /* 0x24 */  struct object *obj;
 }   /* 0x28 */
 PL_SHAPE;
@@ -346,18 +312,18 @@ typedef struct player
     /* 0x28 */  u8      timer_a;
     /* 0x29 */  u8      timer_b;
     /* 0x2A */  u8      timer_wall;
-    /* 0x2B */  u8      timer_floor;
-    /* 0x2C */  vecs    rot;
-    /* 0x32 */  vecs    rot_vel;
+    /* 0x2B */  u8      timer_ground;
+    /* 0x2C */  VECS    rot;
+    /* 0x32 */  VECS    rot_vel;
     /* 0x38 */  s16     slide_ry;
     /* 0x3A */  s16     twirl_ry;
-    /* 0x3C */  vecf    pos;
-    /* 0x48 */  vecf    vel;
+    /* 0x3C */  VECF    pos;
+    /* 0x48 */  VECF    vel;
     /* 0x54 */  f32     vel_f;
     /* 0x58 */  f32     vel_h[2];
-    /* 0x60 */  struct map_face *wall;
-    /* 0x64 */  struct map_face *roof;
-    /* 0x68 */  struct map_face *ground;
+    /* 0x60 */  struct map_plane *wall;
+    /* 0x64 */  struct map_plane *roof;
+    /* 0x68 */  struct map_plane *ground;
     /* 0x6C */  f32     roof_y;
     /* 0x70 */  f32     ground_y;
     /* 0x74 */  s16     ground_ry;
@@ -367,7 +333,7 @@ typedef struct player
     /* 0x80 */  struct object *obj_use;
     /* 0x84 */  struct object *obj_ride;
     /* 0x88 */  struct object *obj;
-    /* 0x8C */  void   *_8C;
+    /* 0x8C */  struct spawn *spawn;
     /* 0x90 */  struct scene *scene;
     /* 0x94 */  struct pl_camera *camera;
     /* 0x98 */  struct pl_shape *shape;
@@ -399,52 +365,45 @@ PLAYER;
     PLAYER *pl, OBJECT *obj
 );
 /* 0x80278504 */ extern void mem_dma(
-    void *dst, const void *start, const void *end
+    char *dst, const char *start, const char *end
 );
 /* 0x80278F2C */ extern void *gfx_alloc(size_t size);
+/* 0x8027A010 */ extern int save_file_star_range(int file, int min, int max);
 /* 0x8029ED20 */ extern OBJECT *obj_create(
-    OBJECT *parent,
-    u32 arg,
-    u8 shape,
+    OBJECT *,
+    SHORT,
+    int shape,
     const O_SCRIPT *script
 );
 /* 0x802D62D8 */ extern void dprintf(int x, int y, const char *fmt, int value);
 /* 0x802D6554 */ extern void dprint(int x, int y, const char *str);
-/* 0x802D77DC */ extern void message_print(s16 x, s16 y, const u8 *str);
-
-/* 0x803225A0 */ extern void osCreateMesgQueue(OSMesgQueue *, OSMesg *, s32);
-/* 0x80322800 */ extern s32 osRecvMesg(OSMesgQueue *, OSMesg *, s32);
-/* 0x803243B0 */ extern void osInvalDCache(void *, s32);
-/* 0x80324460 */ extern s32 osPiStartDma(
-    OSIoMesg *, s32, s32, u32, void *, u32, OSMesgQueue *
-);
-/* 0x80324570 */ extern void bzero(void *, s32);
-/* 0x80324610 */ extern void osInvalICache(void *, s32);
-/* 0x80325D20 */ extern void osWritebackDCache(void *, s32);
-/* 0x803273F0 */ extern void *memcpy(void *, const void *, size_t);
-
-/* 0x8032D93C */ extern PLAYER *mario;
-/* 0x8032DD50 */ extern u8 pl_shape_blink[8];
-/* 0x8032DDC4 */ extern SHAPE **shape_table;
-/* 0x8032DDF8 */ extern s16 stage_index;
-/* 0x8032DEFC */ extern SHAPE_CAMERA *shape_camera;
-/* 0x8032DF00 */ extern SHAPE_OBJECT *shape_object;
-/* 0x8032DF08 */ extern u16 shape_timer;
-/* 0x80331370 */ extern u8 message_kern[0x100];
-
-/* 0x8033B06C */ extern Gfx *video_gfx;
-/* 0x8033B350 */ extern SHAPE_OBJECT shape_object_mirror;
-/* 0x8033B3B0 */ extern PL_SHAPE pl_shape_table[2];
-/* 0x8033B400 */ extern uintptr_t segment_table[0x20];
-/* 0x8033BACA */ extern u16 scene_index;
-/* 0x8033C536 */ extern s16 camera_rot_head[2];
-/* 0x80361158 */ extern OBJECT *object_mario;
-/* 0x80361160 */ extern OBJECT *object;
+/* 0x802D77DC */ extern void message_print(SHORT x, SHORT y, const u8 *str);
 
 /* 0x8037E0B4 */ extern SHAPE *s_script_main(
     ARENA *arena, const S_SCRIPT *script
 );
 
-#endif /* __ASSEMBLER__ */
+/* 0x8032D93C */ extern PLAYER *mario;
+/* 0x8032DD50 */ extern u8 pl_shape_blink[8];
+/* 0x8032DDC4 */ extern SHAPE **shape_table;
+/* 0x8032DDF4 */ extern s16 save_index;
+/* 0x8032DDF8 */ extern s16 stage_index;
+/* 0x8032DEFC */ extern SHAPE_CAMERA *shape_camera;
+/* 0x8032DF00 */ extern SHAPE_OBJECT *shape_object;
+/* 0x8032DF08 */ extern u16 draw_timer;
+/* 0x80331370 */ extern u8 message_kern[0x100];
+
+/* 0x8033A580 */ extern OSThread thread_rmon;
+/* 0x8033B06C */ extern Gfx *video_gfx;
+/* 0x8033B350 */ extern SHAPE_OBJECT shape_object_mirror;
+/* 0x8033B3B0 */ extern PL_SHAPE pl_shape_data[2];
+/* 0x8033B400 */ extern uintptr_t segment_table[32];
+/* 0x8033BAC6 */ extern s16 course_index;
+/* 0x8033BACA */ extern s16 scene_index;
+/* 0x8033C536 */ extern s16 camera_rot_head[2];
+/* 0x80361158 */ extern OBJECT *obj_mario;
+/* 0x80361160 */ extern OBJECT *object;
+
+/* 0x80200200 */ extern u64 stack_entry[0x400/8];
 
 #endif /* __SM64_H__ */

@@ -1,45 +1,43 @@
-/******************************************************************************
- *                  SM64Net - An Internet framework for SM64                  *
- *                    Copyright (C) 2019 - 2021  devwizard                    *
- *        This project is licensed under the terms of the GNU General         *
- *        Public License version 2.  See LICENSE for more information.        *
- ******************************************************************************/
+/******************************************************************************/
+/*                  SM64Net - An Internet framework for SM64                  */
+/*                    Copyright (C) 2019 - 2021  devwizard                    */
+/*        This project is licensed under the terms of the GNU General         */
+/*        Public License version 2.  See LICENSE for more information.        */
+/******************************************************************************/
 
 extern struct
 {
     u8 page[NET_PAGE_LEN];
-    u8 data[NET_PAGE_LEN][NET_PAGE_SIZE];
+    char data[NET_PAGE_LEN][NET_PAGE_SIZE];
 }
 net_heap;
 
 static void *net_alloc(size_t size)
 {
-    uint pages;
-    uint page;
-    uint i;
-    pages = (size+sizeof(net_heap.data[0])-1) / sizeof(net_heap.data[0]);
+    int i;
+    int page = 0;
+    int pages = (size+NET_PAGE_SIZE-1) / NET_PAGE_SIZE;
     if (pages >= 0x100) return NULL;
-    for (page = 0; page < lenof(net_heap.page); page++)
+    for (page = 0; page < NET_PAGE_LEN; page++)
     {
         for (i = 0; i < pages; i++)
         {
-            if (net_heap.page[page+i] > 0) goto end;
+            if (net_heap.page[page+i] > 0) goto cnt;
         }
         net_heap.page[page] = pages;
         for (i = 1; i < pages; i++) net_heap.page[page+i] = 1;
         return &net_heap.data[page];
-    end:;
+    cnt:
+        page += i;
     }
     return NULL;
 }
 
 static void net_free(void *ptr)
 {
-    uint pages;
-    uint page;
-    uint i;
-    page = (typeof(&net_heap.data[0]))ptr - net_heap.data;
-    pages = net_heap.page[page];
+    int i;
+    int page = ((char *)ptr-(char *)net_heap.data) / NET_PAGE_SIZE;
+    int pages = net_heap.page[page];
     for (i = 0; i < pages; i++) net_heap.page[page+i] = 0;
 }
 
