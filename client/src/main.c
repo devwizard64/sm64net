@@ -163,10 +163,10 @@ static void net_init(
     {
         eprint("server is version %s\n", meta.version);
     }
+    puts("Connected.");
     mem_init(proc, np_u32(meta.mem_addr));
     np_table = np_u32(meta.np_data);
     while (argc-- > 0) nff_load(*argv++);
-    puts("Connected.");
 }
 
 static void net_update(void)

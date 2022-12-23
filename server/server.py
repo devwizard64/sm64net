@@ -56,31 +56,30 @@ def update_connect(sock, addr):
     else:
         for i, np in enumerate(np_table):
             if np == None or np.s_addr == addr:
-                np = sm64net.NET_PL(sock, s_udp, addr)
-                np_table[i] = np
+                np = np_table[i] = sm64net.NET_PL(sock, s_udp, addr)
                 np.update_connect()
                 break
         else:
             sock.close()
 
 def update():
-    sockets = [np.s_tcp for np in np_table if np != None] + [s_tcp, s_udp]
-    rd, wr, er = select.select(sockets, [], [], 0)
+    rd, wr, er = select.select(
+        [s_tcp, s_udp] + [np.s_tcp for np in np_table if np != None], [], [], 0
+    )
     for s in rd:
         if s == s_tcp:
             sock, addr = s.accept()
             update_connect(sock, addr[0])
         elif s == s_udp:
             data, addr = s.recvfrom(sm64net.NP_UDP_SIZE)
-            addr = addr[0]
             for np in np_table:
-                if np != None and np.s_addr == addr:
+                if np != None and np.s_addr == addr[0]:
                     np.update_udp(data)
                     break
         else:
             data = recvall(s, sm64net.NP_TCP_SIZE)
-            i = sockets.index(s)
-            np = np_table[i]
-            if np != None:
-                if data != None: np.update_tcp(data)
-                else: np_table[i] = None
+            for i, np in enumerate(np_table):
+                if np != None and np.s_tcp == s:
+                    if data != None: np.update_tcp(data)
+                    else: np_table[i] = None
+                    break

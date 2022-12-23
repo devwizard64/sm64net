@@ -10,12 +10,6 @@ mem_load_usb:
     subu    $sp, 24
     sw      $ra, 20($sp)
     la      $a0, _usbSegmentStart
-    li      $a1, 0x8038F800 - 0x8038EEF0
-    jal     osInvalICache
-    la      $a0, _usbSegmentStart
-    li      $a1, 0x8038F800 - 0x8038EEF0
-    jal     osInvalDCache
-    la      $a0, _usbSegmentStart
     la      $a1, _usbSegmentRomStart
     la      $a2, _usbSegmentRomEnd
     jal     mem_dma

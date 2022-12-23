@@ -181,7 +181,7 @@ class NET_PL:
         self.tcp = data
         self.sync(True, True)
         start = np_name
-        end   = np_name + 1*(NP_NAME_LEN-1)
+        end   = np_name + NP_NAME_LEN-1
         self.name = "".join([
             msg_char_table[struct.unpack(">B", self.tcp[c:c+1])[0]]
             for c in range(start, end)

@@ -22,12 +22,17 @@ static OSMesg usb_msg[1];
 static void usb_main(UNUSED void *arg)
 {
     __cart_acs_get();
+    IO_WRITE(PI_BSD_DOM1_LAT_REG, 0);
+    IO_WRITE(PI_BSD_DOM1_PWD_REG, 12);
+    IO_WRITE(PI_BSD_DOM1_PGS_REG, 7);
+    IO_WRITE(PI_BSD_DOM1_RLS_REG, 2);
     __edx_init();
     __cart_acs_rel();
     for (;;)
     {
         osRecvMesg(&usb_mq, NULL, OS_MESG_BLOCK);
         __cart_acs_get();
+        IO_WRITE(PI_BSD_DOM1_LAT_REG, 40);
         while (__edx_usb_is_rd())
         {
             if (__edx_usb_rd_dram(usb_cmd, sizeof(usb_cmd))) break;
@@ -42,6 +47,7 @@ static void usb_main(UNUSED void *arg)
                     break;
             }
         }
+        IO_WRITE(PI_BSD_DOM1_LAT_REG, 0);
         __cart_acs_rel();
     }
 }
